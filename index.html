@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>筋トレメモ</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#e53935" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="筋トレメモ" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <style>
+    :root {
+      --bg: #2d2d2d;
+      --surface: #464646;
+      --surface2: #585858;
+      --primary: #e53935;
+      --primary-light: rgba(229,57,53,0.15);
+      --text: #f0f0f0;
+      --text-muted: #a8a8a8;
+      --border: #686868;
+      --shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      -webkit-font-smoothing: antialiased;
+    }
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    .main-content { flex: 1; padding: 16px; padding-bottom: 84px; }
+
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      display: flex; background: var(--surface);
+      border-top: 1px solid var(--border); z-index: 100;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 10px; background: none; border: none;
+      color: var(--text-muted); cursor: pointer; transition: color .15s;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-label { font-size: 10px; margin-top: 3px; }
+
+    .card { background: var(--surface); border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: 14px; font-weight: 600; transition: opacity .15s;
+    }
+    .btn:active { opacity: .75; }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; padding: 14px; font-size: 16px; border-radius: 10px; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost {
+      background: transparent; color: var(--text-muted);
+      border: 1px dashed var(--border); width: 100%; margin-top: 6px; font-weight: 500;
+    }
+    .btn-danger { background: transparent; color: #e53935; border: none; padding: 4px 8px; font-size: 16px; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+    .input {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 10px 12px;
+      font-size: 14px; width: 100%; outline: none; -webkit-appearance: none;
+    }
+    .input:focus { border-color: var(--primary); }
+    select.input { cursor: pointer; }
+
+    .page-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+    .section-title {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; margin-top: 4px;
+    }
+
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .chip { display: inline-block; padding: 2px 8px; background: var(--surface2); border-radius: 10px; font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); }
+
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row-between { display: flex; justify-content: space-between; align-items: center; }
+
+    .set-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .set-table th { color: var(--text-muted); font-size: 11px; padding: 2px 2px 6px; text-align: center; font-weight: 500; }
+    .set-table td { padding: 2px; vertical-align: middle; }
+    .set-table td input[type='number'] {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); padding: 6px 3px;
+      font-size: 13px; text-align: center; outline: none; -moz-appearance: textfield;
+    }
+    .set-table td input[type='number']::-webkit-outer-spin-button,
+    .set-table td input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .set-table td input[type='number']:focus { border-color: var(--primary); }
+
+    .weight-toggle { display: flex; gap: 2px; background: var(--surface2); border-radius: 6px; padding: 2px; border: 1px solid var(--border); }
+    .weight-toggle button {
+      flex: 1; padding: 4px 4px; border: none; border-radius: 4px;
+      background: transparent; color: var(--text-muted); font-size: 11px;
+      cursor: pointer; white-space: nowrap; transition: all .15s;
+    }
+    .weight-toggle button.active { background: var(--primary); color: #fff; font-weight: 600; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+
+    .switch-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+    }
+    .switch-row:last-child { border-bottom: none; }
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--surface2); border-radius: 24px; transition: .25s; border: 1px solid var(--border);
+    }
+    .toggle-slider:before {
+      position: absolute; content: ''; height: 18px; width: 18px;
+      left: 2px; bottom: 2px; background: #fff; border-radius: 50%; transition: .25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); border-color: var(--primary); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+    .stat-card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 8px; box-shadow: var(--shadow); }
+    .stat-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .stat-max { font-size: 24px; font-weight: 700; color: var(--primary); line-height: 1; }
+    .stat-label { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+
+    .empty-state { text-align: center; padding: 56px 16px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 52px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    .exercise-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+
+    .rm-bar {
+      display: flex; align-items: stretch; gap: 1px;
+      border-radius: 8px; overflow: hidden; margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .rm-bar-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 6px 4px; background: var(--surface2);
+    }
+    .rm-bar-item:first-child { border-radius: 7px 0 0 7px; }
+    .rm-bar-item:last-child { border-radius: 0 7px 7px 0; }
+    .rm-bar-item.highlight { background: var(--primary-light); }
+    .rm-bar-label { font-size: 9px; color: var(--text-muted); margin-bottom: 2px; }
+    .rm-bar-value { font-size: 13px; font-weight: 700; color: var(--text); }
+    .rm-bar-value.red { color: var(--primary); }
+    .rm-bar-value.orange { color: #e65100; }
+
+    .suggest-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+      padding: 7px 10px; background: var(--surface2); border-radius: 8px;
+      font-size: 12px; border: 1px solid var(--border);
+    }
+    .suggest-value { font-weight: 700; color: var(--primary); font-size: 14px; }
+
+    .draft-banner {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: #2a2200; border: 1px solid #ffc107;
+      border-radius: 8px; margin-bottom: 12px; font-size: 13px; color: #ffd54f;
+    }
+
+    .chart-wrap { width: 100%; margin-top: 4px; }
+    .chart-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); justify-content: flex-end; margin-top: 2px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 3px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/htm@3/dist/htm.js"></script>
+  <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+  </script>
+  <script>
+'use strict';
+const { useState, useEffect } = React;
+const html = htm.bind(React.createElement);
+
+// ── ID generator ──
+let _idC = Date.now();
+const genId = () => `${_idC++}${Math.random().toString(36).slice(2, 7)}`;
+
+// ── Muscle group config ──
+const COLORS = {
+  chest:     { bg: '#e91e63', text: '#fff', label: '胸' },
+  back:      { bg: '#009688', text: '#fff', label: '背中' },
+  shoulder:  { bg: '#ff9800', text: '#fff', label: '肩' },
+  arm:       { bg: '#ff5722', text: '#fff', label: '腕' },
+  leg_front: { bg: '#673ab7', text: '#fff', label: '足（前）' },
+  leg_back:  { bg: '#4caf50', text: '#fff', label: '足（後）' },
+};
+const MG_ORDER = ['chest','back','shoulder','arm','leg_front','leg_back'];
+
+// ── Storage ──
+const EX_KEY    = 'wm_exercises';
+const SES_KEY   = 'wm_sessions';
+const MENU_KEY  = 'wm_menus';
+const NC_KEY    = 'wm_nc_config';
+const DRAFT_KEY = 'wm_draft';
+
+function makeDefaults() {
+  return [
+    { id: genId(), name: 'スクワット',   muscleGroup: 'leg_front', standardReps: 5, isBig3: true,  isPriority: true,  maxWeight: null, subMaxWeights: {},
+      subExercises: [{ id: genId(), name: 'ポーズスクワット' }, { id: genId(), name: 'テンポスクワット' }] },
+    { id: genId(), name: 'ベンチプレス', muscleGroup: 'chest',     standardReps: 5, isBig3: true,  isPriority: true,  maxWeight: null, subMaxWeights: {},
+      subExercises: [{ id: genId(), name: 'ポーズベンチプレス' }, { id: genId(), name: 'クローズグリップ' }] },
+    { id: genId(), name: 'デッドリフト', muscleGroup: 'back',      standardReps: 5, isBig3: true,  isPriority: true,  maxWeight: null, subMaxWeights: {},
+      subExercises: [{ id: genId(), name: 'ルーマニアンデッドリフト' }, { id: genId(), name: 'スモウデッドリフト' }] },
+  ];
+}
+
+function getExercises() {
+  try {
+    const d = localStorage.getItem(EX_KEY);
+    if (d) return JSON.parse(d).map(ex => ({ subMaxWeights: {}, ...ex }));
+  } catch {}
+  const def = makeDefaults();
+  saveExercises(def);
+  return def;
+}
+function saveExercises(ex) { localStorage.setItem(EX_KEY, JSON.stringify(ex)); }
+
+function getSessions() {
+  try { const d = localStorage.getItem(SES_KEY); if (d) return JSON.parse(d); } catch {}
+  return [];
+}
+function saveSessions(ses) { localStorage.setItem(SES_KEY, JSON.stringify(ses)); }
+
+function getMenus() {
+  try { const d = localStorage.getItem(MENU_KEY); if (d) return JSON.parse(d); } catch {}
+  return [];
+}
+function saveMenus(m) { localStorage.setItem(MENU_KEY, JSON.stringify(m)); }
+
+function getNcConfig() {
+  try { const d = localStorage.getItem(NC_KEY); if (d) return JSON.parse(d); } catch {}
+  return { url: '', username: '', password: '', filePath: 'workout-memo.json' };
+}
+function saveNcConfig(cfg) { localStorage.setItem(NC_KEY, JSON.stringify(cfg)); }
+
+function loadDraft() {
+  try { const d = localStorage.getItem(DRAFT_KEY); if (d) return JSON.parse(d); } catch {}
+  return null;
+}
+function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+// ── 1RM (Epley variant): 1RM = w × (1 + reps/40) ──
+function calcRM(weight, reps) {
+  if (weight == null || reps == null || reps <= 0 || weight <= 0) return null;
+  return weight * (1 + reps / 40);
+}
+
+function suggestWeight(targetReps, maxRM) {
+  if (!targetReps || !maxRM || targetReps <= 0) return null;
+  const raw = maxRM * 40 / (targetReps + 40);
+  return Math.ceil(raw / 2.5) * 2.5;
+}
+
+function getHistoricalMaxRM(exerciseId, subExerciseId) {
+  const sessions = getSessions();
+  const norm = v => (v == null || v === '') ? null : v;
+  let maxRM = null;
+  for (const ses of sessions) {
+    const rec = ses.exercises.find(r =>
+      r.exerciseId === exerciseId && norm(r.subExerciseId) === norm(subExerciseId)
+    );
+    if (!rec) continue;
+    rec.sets.forEach(set => {
+      const w = set.weightType === 'bodyweight' ? ses.bodyWeight : set.weight;
+      const rm = calcRM(w, set.reps);
+      if (rm != null && (maxRM == null || rm > maxRM)) maxRM = rm;
+    });
+  }
+  return maxRM;
+}
+
+function getMaxWeight(ex, subExerciseId) {
+  if (!ex) return null;
+  if (subExerciseId) return ex.subMaxWeights?.[subExerciseId] ?? null;
+  return ex.maxWeight ?? null;
+}
+
+// ── Max weight tracking ──
+function updateMaxWeights(session) {
+  const exercises = getExercises();
+  let changed = false;
+  session.exercises.forEach(record => {
+    const ex = exercises.find(e => e.id === record.exerciseId);
+    if (!ex) return;
+    if (!ex.subMaxWeights) ex.subMaxWeights = {};
+    const subId = record.subExerciseId || null;
+    record.sets.forEach(set => {
+      let w = null;
+      if (set.weightType === 'kg' && set.weight != null) w = set.weight;
+      else if (set.weightType === 'bodyweight' && session.bodyWeight != null) w = session.bodyWeight;
+      if (w == null) return;
+      if (!subId) {
+        if (ex.maxWeight == null || w > ex.maxWeight) { ex.maxWeight = w; changed = true; }
+      } else {
+        if (ex.subMaxWeights[subId] == null || w > ex.subMaxWeights[subId]) {
+          ex.subMaxWeights[subId] = w; changed = true;
+        }
+      }
+    });
+  });
+  if (changed) saveExercises(exercises);
+}
+
+function recalcAllMaxWeights() {
+  const exercises = getExercises().map(ex => ({ ...ex, maxWeight: null, subMaxWeights: {} }));
+  for (const ses of getSessions()) {
+    ses.exercises.forEach(record => {
+      const ex = exercises.find(e => e.id === record.exerciseId);
+      if (!ex) return;
+      const subId = record.subExerciseId || null;
+      record.sets.forEach(set => {
+        let w = null;
+        if (set.weightType === 'kg' && set.weight != null) w = set.weight;
+        else if (set.weightType === 'bodyweight' && ses.bodyWeight != null) w = ses.bodyWeight;
+        if (w == null) return;
+        if (!subId) { if (ex.maxWeight == null || w > ex.maxWeight) ex.maxWeight = w; }
+        else { if (ex.subMaxWeights[subId] == null || w > ex.subMaxWeights[subId]) ex.subMaxWeights[subId] = w; }
+      });
+    });
+  }
+  saveExercises(exercises);
+}
+
+// ── Export / Import ──
+function exportAllData() {
+  const exported = new Date().toISOString().split('T')[0];
+  const blob = new Blob([JSON.stringify({ version: 1, exported, exercises: getExercises(), sessions: getSessions(), menus: getMenus() }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '筋トレメモ_' + exported + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportSessionsCSV() {
+  const sessions  = getSessions().sort((a, b) => a.date.localeCompare(b.date));
+  const exercises = getExercises();
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['日付','体重(kg)','種目','サブ種目','セット番号','重量種別','重量(kg)','回数','推定1RM(kg)']];
+  for (const ses of sessions) {
+    for (const rec of ses.exercises) {
+      const ex = exercises.find(e => e.id === rec.exerciseId);
+      const subEx = ex && rec.subExerciseId ? ex.subExercises.find(s => s.id === rec.subExerciseId) : null;
+      rec.sets.forEach((set, si) => {
+        const w = set.weightType === 'bodyweight' ? ses.bodyWeight : set.weight;
+        const rm = calcRM(w, set.reps);
+        rows.push([ses.date, ses.bodyWeight ?? '', ex?.name ?? '', subEx?.name ?? '',
+          si + 1, set.weightType === 'bodyweight' ? '体重' : 'kg',
+          set.weightType === 'kg' && set.weight != null ? set.weight : '',
+          set.reps ?? '', rm != null ? Math.round(rm * 10) / 10 : '']);
+      });
+    }
+  }
+  const csv = rows.map(r => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '筋トレメモ_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseImportFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || typeof data !== 'object') throw new Error('フォーマットが正しくありません');
+        resolve(data);
+      } catch (err) { reject(new Error('読み込み失敗: ' + err.message)); }
+    };
+    reader.onerror = () => reject(new Error('ファイルを読み込めませんでした'));
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+// ── Nextcloud (kept for future use) ──
+function ncFileUrl(cfg) { return cfg.url.replace(/\/$/, '') + '/remote.php/dav/files/' + encodeURIComponent(cfg.username) + '/' + cfg.filePath; }
+function ncBasicAuth(cfg) { return 'Basic ' + btoa(unescape(encodeURIComponent(cfg.username + ':' + cfg.password))); }
+function ncHeaders(cfg) { return { 'Authorization': ncBasicAuth(cfg), 'Content-Type': 'application/json' }; }
+async function ncSave(cfg) {
+  const res = await fetch(ncFileUrl(cfg), { method: 'PUT', headers: ncHeaders(cfg), body: JSON.stringify({ exercises: getExercises(), sessions: getSessions(), menus: getMenus() }) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+async function ncLoad(cfg) {
+  const res = await fetch(ncFileUrl(cfg), { headers: { 'Authorization': ncBasicAuth(cfg) } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (Array.isArray(data.exercises)) saveExercises(data.exercises);
+  if (Array.isArray(data.sessions))  saveSessions(data.sessions);
+  if (Array.isArray(data.menus))     saveMenus(data.menus);
+}
+
+// ── Utilities ──
+const todayStr = () => new Date().toISOString().split('T')[0];
+const fmtRM = v => v != null ? (Math.round(v * 10) / 10) + 'kg' : '--';
+
+function repBgStyle(reps, stdReps) {
+  if (reps == null || !stdReps) return {};
+  if (reps > stdReps * 1.2) return { backgroundColor: 'rgba(76,175,80,0.2)', borderColor: '#4caf50' };
+  if (reps < stdReps * 0.8) return { backgroundColor: 'rgba(244,67,54,0.2)', borderColor: '#f44336' };
+  return {};
+}
+
+function sortedByMG(exercises) {
+  return [...exercises].sort((a, b) => {
+    const d = MG_ORDER.indexOf(a.muscleGroup) - MG_ORDER.indexOf(b.muscleGroup);
+    return d !== 0 ? d : a.name.localeCompare(b.name, 'ja');
+  });
+}
+
+function renderExOptions(exercises) {
+  const sorted = sortedByMG(exercises);
+  return MG_ORDER.map(mg => {
+    const group = sorted.filter(e => e.muscleGroup === mg);
+    if (!group.length) return null;
+    return html`<optgroup key=${mg} label=${COLORS[mg].label}>
+      ${group.map(e => html`<option key=${e.id} value=${e.id}>${e.name}</option>`)}
+    </optgroup>`;
+  });
+}
+
+// ── Stats Chart ──
+function WorkoutChart({ data }) {
+  if (!data || data.length < 2) return null;
+  const W = 320, H = 170;
+  const ml = 44, mr = 8, mt = 8, mb = 26;
+  const pw = W - ml - mr, ph = H - mt - mb;
+
+  const allY = data.flatMap(p => [p.weight, p.rm].filter(v => v != null));
+  const rawMin = Math.min(...allY), rawMax = Math.max(...allY);
+  const pad = (rawMax - rawMin) * 0.1 || 5;
+  const minY = Math.floor((rawMin - pad) / 5) * 5;
+  const maxY = Math.ceil((rawMax + pad) / 5) * 5;
+  const yRange = maxY - minY || 1;
+
+  const xs = i => (ml + (data.length <= 1 ? pw / 2 : i / (data.length - 1) * pw)).toFixed(1);
+  const ys = v => (mt + ph - (v - minY) / yRange * ph).toFixed(1);
+
+  const wPath = data.map((p, i) => (i === 0 ? 'M' : 'L') + xs(i) + ',' + ys(p.weight)).join(' ');
+  const rmPoints = data.map((p, i) => p.rm != null ? { p, i } : null).filter(Boolean);
+  const rmPath = rmPoints.map(({ p, i }, li) => (li === 0 ? 'M' : 'L') + xs(i) + ',' + ys(p.rm)).join(' ');
+
+  const yTicks = 4;
+  const yTickVals = Array.from({ length: yTicks + 1 }, (_, i) => minY + yRange / yTicks * i);
+  const skipX = Math.max(1, Math.ceil(data.length / 6));
+
+  return html`
+    <div className="chart-wrap">
+      <svg viewBox=${'0 0 ' + W + ' ' + H} style=${{ width: '100%', height: 'auto' }}>
+        ${yTickVals.map((v, i) => html`
+          <g key=${i}>
+            <line x1=${ml} y1=${ys(v)} x2=${W - mr} y2=${ys(v)} stroke="#e0e0e0" strokeWidth="1" />
+            <text x=${ml - 4} y=${ys(v)} textAnchor="end" dominantBaseline="middle"
+              fontSize="9" fill="#9e9e9e">${Math.round(v)}</text>
+          </g>
+        `)}
+        <path d=${wPath} fill="none" stroke="#e53935" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round" />
+        ${rmPoints.length >= 2 && html`
+          <path d=${rmPath} fill="none" stroke="#e65100" strokeWidth="2"
+            strokeDasharray="5 3" strokeLinecap="round" strokeLinejoin="round" />
+        `}
+        ${data.map((p, i) => html`
+          <circle key=${'w'+i} cx=${xs(i)} cy=${ys(p.weight)} r="3.5" fill="#e53935" />
+          ${p.rm != null && html`
+            <circle key=${'r'+i} cx=${xs(i)} cy=${ys(p.rm)} r="3" fill="#e65100" />
+          `}
+        `)}
+        ${data.filter((_, i) => i % skipX === 0 || i === data.length - 1).map(p => {
+          const i = data.indexOf(p);
+          return html`
+            <text key=${'xl'+i} x=${xs(i)} y=${H - mb + 14}
+              textAnchor="middle" fontSize="9" fill="#9e9e9e">
+              ${p.date.slice(5).replace('-', '/')}
+            </text>
+          `;
+        })}
+      </svg>
+      <div className="chart-legend">
+        <span><span className="legend-dot" style=${{ background: '#e53935' }}></span>実重量</span>
+        ${rmPoints.length >= 2 && html`<span><span className="legend-dot" style=${{ background: '#e65100' }}></span>推定1RM</span>`}
+      </div>
+    </div>
+  `;
+}
+
+// ── Navigation ──
+const NAV_ITEMS = [
+  { page: 'home',        label: 'ホーム', icon: '🏠' },
+  { page: 'new-session', label: '記録',   icon: '➕' },
+  { page: 'sessions',    label: '履歴',   icon: '📋' },
+  { page: 'exercises',   label: '種目',   icon: '🏋️' },
+  { page: 'stats',       label: '統計',   icon: '📊' },
+];
+
+function Navigation({ currentPage, navigate }) {
+  return html`
+    <nav className="bottom-nav">
+      ${NAV_ITEMS.map(item => {
+        const isActive = currentPage === item.page ||
+          (item.page === 'exercises' && ['exercise-form','menus','menu-form'].includes(currentPage)) ||
+          (item.page === 'home' && currentPage === 'settings');
+        return html`
+          <button key=${item.page}
+            className=${'nav-item' + (isActive ? ' active' : '')}
+            onClick=${() => navigate({ page: item.page })}>
+            <span className="nav-icon">${item.icon}</span>
+            <span className="nav-label">${item.label}</span>
+          </button>
+        `;
+      })}
+    </nav>
+  `;
+}
+
+// ── Home ──
+function Home({ navigate }) {
+  const sessions  = getSessions().sort((a, b) => b.date.localeCompare(a.date));
+  const exercises = getExercises();
+  const big3      = exercises.filter(e => e.isBig3);
+  const recent    = sessions.slice(0, 5);
+  const today     = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 4 }}>
+      <div className="page-title" style=${{ marginBottom: 0 }}>💪 筋トレメモ</div>
+      <button style=${{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', padding: '4px 8px', color: 'var(--text-muted)' }}
+        onClick=${() => navigate({ page: 'settings' })}>⚙️</button>
+    </div>
+    <p style=${{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>${today}</p>
+
+    <button className="btn btn-primary" style=${{ marginBottom: 20 }}
+      onClick=${() => navigate({ page: 'new-session' })}>
+      ＋ 今日のトレーニングを記録
+    </button>
+
+    ${big3.length > 0 && html`
+      <div className="section-title">BIG3 最高重量</div>
+      <div style=${{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        ${big3.map(ex => {
+          const rm = getHistoricalMaxRM(ex.id, null);
+          return html`
+            <div key=${ex.id} className="card"
+              style=${{ flex: 1, padding: 10, textAlign: 'center', marginBottom: 0, cursor: 'pointer' }}
+              onClick=${() => navigate({ page: 'stats' })}>
+              <div style=${{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>${ex.name}</div>
+              <div style=${{ fontSize: 18, fontWeight: 700, color: 'var(--primary)' }}>
+                ${ex.maxWeight != null ? ex.maxWeight + 'kg' : '--'}
+              </div>
+              ${rm != null && html`
+                <div style=${{ fontSize: 10, color: '#e65100' }}>1RM ${fmtRM(rm)}</div>
+              `}
+            </div>
+          `;
+        })}
+      </div>
+    `}
+
+    ${recent.length > 0 ? html`
+      <div className="section-title">最近のセッション</div>
+      ${recent.map(session => {
+        const exCount  = session.exercises.length;
+        const totalSet = session.exercises.reduce((s, er) => s + er.sets.length, 0);
+        const names    = session.exercises
+          .map(er => (exercises.find(e => e.id === er.exerciseId) || {}).name || '?')
+          .slice(0, 3).join('・');
+        return html`
+          <div key=${session.id} className="card" style=${{ cursor: 'pointer' }}
+            onClick=${() => navigate({ page: 'session-detail', params: { id: session.id } })}>
+            <div className="row-between">
+              <div>
+                <div style=${{ fontWeight: 600, fontSize: 15 }}>${session.date}</div>
+                <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+                  ${names}${exCount > 3 ? ' 他' + (exCount - 3) + '種目' : ''} · ${totalSet}セット
+                  ${session.bodyWeight ? ' · 体重 ' + session.bodyWeight + 'kg' : ''}
+                </div>
+              </div>
+              <span style=${{ color: 'var(--text-muted)', fontSize: 20 }}>›</span>
+            </div>
+          </div>
+        `;
+      })}
+    ` : html`
+      <div className="empty-state">
+        <div className="icon">🏋️</div>
+        <p>まだトレーニング記録がありません<br/>最初のセッションを記録しましょう！</p>
+      </div>
+    `}
+  </div>`;
+}
+
+// ── Sessions list ──
+function Sessions({ navigate }) {
+  const sessions  = getSessions().sort((a, b) => b.date.localeCompare(a.date));
+  const exercises = getExercises();
+
+  return html`<div>
+    <div className="page-title">トレーニング履歴</div>
+    ${sessions.length === 0 ? html`
+      <div className="empty-state"><div className="icon">📋</div><p>記録がまだありません</p></div>
+    ` : sessions.map(session => {
+      const names    = session.exercises.map(er => (exercises.find(e => e.id === er.exerciseId) || {}).name || '不明').slice(0, 3);
+      const more     = session.exercises.length - 3;
+      const totalSet = session.exercises.reduce((s, er) => s + er.sets.length, 0);
+      return html`
+        <div key=${session.id} className="card" style=${{ cursor: 'pointer' }}
+          onClick=${() => navigate({ page: 'session-detail', params: { id: session.id } })}>
+          <div className="row-between" style=${{ marginBottom: 6 }}>
+            <div style=${{ fontWeight: 700, fontSize: 16 }}>${session.date}</div>
+            ${session.bodyWeight != null && html`<span className="chip">体重 ${session.bodyWeight}kg</span>`}
+          </div>
+          <div style=${{ fontSize: 13, color: 'var(--text-muted)' }}>
+            ${names.join('・')}${more > 0 ? ' 他' + more + '種目' : ''}
+          </div>
+          <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>${totalSet} セット合計</div>
+        </div>
+      `;
+    })}
+  </div>`;
+}
+
+// ── Session detail ──
+function SessionDetail({ navigate, sessionId }) {
+  const [sessions, setSessions] = useState(() => getSessions());
+  const exercises = getExercises();
+  const session   = sessions.find(s => s.id === sessionId);
+
+  if (!session) return html`
+    <div>
+      <button onClick=${() => navigate({ page: 'sessions' })} className="btn btn-secondary btn-sm" style=${{ marginBottom: 16 }}>← 戻る</button>
+      <p style=${{ color: 'var(--text-muted)' }}>セッションが見つかりません</p>
+    </div>
+  `;
+
+  const handleDelete = () => {
+    if (!confirm('このセッションを削除しますか？')) return;
+    saveSessions(sessions.filter(s => s.id !== sessionId));
+    navigate({ page: 'sessions' });
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'sessions' })} className="btn btn-secondary btn-sm">← 戻る</button>
+      <div className="row" style=${{ gap: 6 }}>
+        <button onClick=${() => navigate({ page: 'edit-session', params: { id: sessionId } })}
+          className="btn btn-secondary btn-sm">✏️ 編集</button>
+        <button onClick=${handleDelete} className="btn btn-danger btn-sm">削除</button>
+      </div>
+    </div>
+
+    <div style=${{ marginBottom: 16 }}>
+      <div className="page-title" style=${{ marginBottom: 6 }}>${session.date}</div>
+      ${session.bodyWeight != null && html`<span className="chip">体重 ${session.bodyWeight}kg</span>`}
+    </div>
+
+    ${session.exercises.map(record => {
+      const ex     = exercises.find(e => e.id === record.exerciseId);
+      const subEx  = ex && record.subExerciseId ? ex.subExercises.find(s => s.id === record.subExerciseId) : null;
+      const colors = COLORS[(ex && ex.muscleGroup) || 'chest'];
+      const std    = ex?.standardReps || 0;
+      const maxW   = ex ? getMaxWeight(ex, record.subExerciseId) : null;
+
+      return html`
+        <div key=${record.id} className="card">
+          <div className="row-between" style=${{ marginBottom: 6 }}>
+            <div>
+              <span style=${{ fontWeight: 700, fontSize: 15 }}>${ex?.name || '不明'}</span>
+              ${subEx && html`<span style=${{ color: 'var(--text-muted)', fontSize: 13 }}> — ${subEx.name}</span>`}
+            </div>
+            <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text }}>${colors.label}</span>
+          </div>
+          ${maxW != null && html`
+            <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+              基準 ${std} rep / MAX ${maxW}kg
+            </div>
+          `}
+          <table className="set-table">
+            <thead><tr>
+              <th style=${{ width: 28 }}>Set</th>
+              <th>重量</th>
+              <th>Rep</th>
+              <th>1RM</th>
+            </tr></thead>
+            <tbody>
+              ${record.sets.map((set, si) => {
+                const isBW = set.weightType === 'bodyweight';
+                const wkg  = isBW ? session.bodyWeight : set.weight;
+                const rm   = calcRM(wkg, set.reps);
+                const rs   = repBgStyle(set.reps, std);
+                return html`
+                  <tr key=${set.id}>
+                    <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>${si + 1}</td>
+                    <td style=${{ textAlign: 'center', fontSize: 14 }}>
+                      ${isBW
+                        ? html`<span>体重${session.bodyWeight != null ? html`<span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>(${session.bodyWeight}kg)</span>` : ''}</span>`
+                        : html`<span>${set.weight != null ? set.weight : '--'}kg</span>`}
+                    </td>
+                    <td style=${{ textAlign: 'center' }}>
+                      <span style=${{
+                        backgroundColor: rs.backgroundColor, padding: '3px 8px', borderRadius: 5,
+                        display: 'inline-block', fontSize: 14, fontWeight: rs.backgroundColor ? 700 : 400,
+                      }}>${set.reps != null ? set.reps : '--'} rep</span>
+                    </td>
+                    <td style=${{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: rm != null ? '#e65100' : 'var(--text-muted)' }}>
+                      ${fmtRM(rm)}
+                    </td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </div>
+      `;
+    })}
+  </div>`;
+}
+
+// ── Shared session form logic ──
+function useSessionForm(initial) {
+  const [date,       setDate]      = useState(initial.date || todayStr());
+  const [bodyWeight, setBW]        = useState(initial.bodyWeight != null ? String(initial.bodyWeight) : '');
+  const [records,    setRecords]   = useState(initial.records || []);
+  const [targetReps, setTargetReps] = useState({});
+
+  const bw = bodyWeight !== '' ? parseFloat(bodyWeight) : null;
+
+  const loadMenu = menu => setRecords(menu.entries.map(e => ({
+    id: genId(), exerciseId: e.exerciseId, subExerciseId: e.subExerciseId,
+    sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null }],
+  })));
+
+  const addExercise = (exercises) => {
+    if (!exercises.length) return;
+    setRecords(p => [...p, {
+      id: genId(), exerciseId: exercises[0].id, subExerciseId: undefined,
+      sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null }],
+    }]);
+  };
+
+  const removeExercise = id => setRecords(p => p.filter(r => r.id !== id));
+  const updateRecord   = (id, patch) => setRecords(p => p.map(r => r.id === id ? { ...r, ...patch } : r));
+
+  const addSet = recId => setRecords(p => p.map(r => {
+    if (r.id !== recId) return r;
+    const last = r.sets[r.sets.length - 1];
+    return { ...r, sets: [...r.sets, { id: genId(), weight: last?.weight ?? null, weightType: last?.weightType ?? 'kg', reps: last?.reps ?? null }] };
+  }));
+
+  const removeSet   = (recId, setId) => setRecords(p => p.map(r => r.id === recId ? { ...r, sets: r.sets.filter(s => s.id !== setId) } : r));
+  const updateSet   = (recId, setId, patch) => setRecords(p => p.map(r => r.id === recId ? { ...r, sets: r.sets.map(s => s.id === setId ? { ...s, ...patch } : s) } : r));
+
+  return { date, setDate, bodyWeight, setBW, records, setRecords, bw, loadMenu, addExercise, removeExercise, updateRecord, addSet, removeSet, updateSet, targetReps, setTargetReps };
+}
+
+// ── Session form exercise card ──
+function ExerciseCard({ record, exercises, bw, allSessions, targetReps, setTargetReps,
+  removeExercise, updateRecord, addSet, removeSet, updateSet }) {
+
+  const ex     = exercises.find(e => e.id === record.exerciseId);
+  const colors = COLORS[(ex?.muscleGroup) || 'chest'];
+  const std    = ex?.standardReps || 0;
+  const subId  = record.subExerciseId || null;
+  const maxW   = ex ? getMaxWeight(ex, subId) : null;
+  const histRM = ex ? getHistoricalMaxRM(record.exerciseId, subId) : null;
+
+  // Best 1RM from current sets
+  let curBestRM = null;
+  record.sets.forEach(set => {
+    const w = set.weightType === 'bodyweight' ? bw : set.weight;
+    const rm = calcRM(w, set.reps);
+    if (rm != null && (curBestRM == null || rm > curBestRM)) curBestRM = rm;
+  });
+
+  const tRepsStr = targetReps[record.id] || '';
+  const tReps    = tRepsStr !== '' ? parseInt(tRepsStr, 10) : null;
+  const suggested = (tReps && histRM) ? suggestWeight(tReps, histRM) : null;
+
+  // History (last 3 sessions)
+  const norm    = v => (v == null || v === '') ? null : v;
+  const history = [];
+  for (const ses of [...allSessions].sort((a, b) => b.date.localeCompare(a.date))) {
+    const rec = ses.exercises.find(r =>
+      r.exerciseId === record.exerciseId && norm(r.subExerciseId) === norm(subId)
+    );
+    if (rec && rec.sets.some(s => s.reps != null || s.weight != null)) {
+      history.push({ date: ses.date, bodyWeight: ses.bodyWeight, sets: rec.sets });
+      if (history.length >= 3) break;
+    }
+  }
+
+  return html`
+    <div className="card">
+      <div className="exercise-header">
+        <div style=${{ flex: 1 }}>
+          <div className="row" style=${{ marginBottom: ex?.subExercises.length ? 6 : 0 }}>
+            <select className="input" value=${record.exerciseId} style=${{ flex: 1 }}
+              onChange=${e => updateRecord(record.id, { exerciseId: e.target.value, subExerciseId: undefined })}>
+              ${renderExOptions(exercises)}
+            </select>
+            <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text }}>
+              ${colors.label}
+            </span>
+          </div>
+          ${ex?.subExercises.length > 0 && html`
+            <select className="input" value=${record.subExerciseId || ''} style=${{ fontSize: 13 }}
+              onChange=${e => updateRecord(record.id, { subExerciseId: e.target.value || undefined })}>
+              <option value="">サブ種目なし（メイン）</option>
+              ${ex.subExercises.map(s => html`<option key=${s.id} value=${s.id}>${s.name}</option>`)}
+            </select>
+          `}
+        </div>
+        <button className="btn btn-danger"
+          style=${{ marginLeft: 4, alignSelf: 'flex-start', padding: '8px' }}
+          onClick=${() => removeExercise(record.id)}>✕</button>
+      </div>
+
+      <div className="rm-bar">
+        ${maxW != null && html`
+          <div className="rm-bar-item">
+            <span className="rm-bar-label">過去MAX</span>
+            <span className="rm-bar-value">${maxW}kg</span>
+          </div>
+        `}
+        ${histRM != null && html`
+          <div className="rm-bar-item">
+            <span className="rm-bar-label">過去MAX 1RM</span>
+            <span className="rm-bar-value orange">${fmtRM(histRM)}</span>
+          </div>
+        `}
+        <div className=${'rm-bar-item' + (curBestRM != null ? ' highlight' : '')}>
+          <span className="rm-bar-label">今回推定1RM</span>
+          <span className=${'rm-bar-value' + (curBestRM != null ? ' red' : '')}>${fmtRM(curBestRM)}</span>
+        </div>
+      </div>
+
+      <div className="suggest-row">
+        <span style=${{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>目標 rep数</span>
+        <input type="number" className="input" min="1" max="30"
+          value=${tRepsStr}
+          onChange=${e => setTargetReps(p => ({ ...p, [record.id]: e.target.value }))}
+          style=${{ width: 56, padding: '4px 8px', fontSize: 13 }}
+          placeholder="--" />
+        ${suggested != null
+          ? html`<span className="suggest-value">→ 推奨: ${suggested}kg</span>`
+          : html`<span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>目標rep入力で推奨重量を表示</span>`}
+      </div>
+
+      <table className="set-table">
+        <thead><tr>
+          <th style=${{ width: 22 }}>#</th>
+          <th style=${{ width: 72 }}>種別</th>
+          <th>重量</th>
+          <th style=${{ width: 58 }}>Rep</th>
+          <th style=${{ width: 54 }}>1RM</th>
+          <th style=${{ width: 22 }}></th>
+        </tr></thead>
+        <tbody>
+          ${record.sets.map((set, si) => {
+            const isBW = set.weightType === 'bodyweight';
+            const wkg  = isBW ? bw : set.weight;
+            const rm   = calcRM(wkg, set.reps);
+            const rs   = repBgStyle(set.reps, std);
+            return html`
+              <tr key=${set.id}>
+                <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>${si + 1}</td>
+                <td>
+                  <div className="weight-toggle">
+                    <button className=${set.weightType === 'kg' ? 'active' : ''}
+                      onClick=${() => updateSet(record.id, set.id, { weightType: 'kg' })}>kg</button>
+                    <button className=${set.weightType === 'bodyweight' ? 'active' : ''}
+                      onClick=${() => updateSet(record.id, set.id, { weightType: 'bodyweight' })}>体重</button>
+                  </div>
+                </td>
+                <td>
+                  ${isBW ? html`
+                    <div style=${{ textAlign: 'center', fontSize: 13, padding: '6px 0',
+                      color: bw != null ? 'var(--text)' : 'var(--text-muted)' }}>
+                      ${bw != null ? bw + 'kg' : '---'}
+                    </div>
+                  ` : html`
+                    <input type="number"
+                      value=${set.weight != null ? set.weight : ''}
+                      onChange=${e => updateSet(record.id, set.id, {
+                        weight: e.target.value !== '' ? parseFloat(e.target.value) : null
+                      })}
+                      placeholder="0" step="2.5" min="0" />
+                  `}
+                </td>
+                <td>
+                  <input type="number"
+                    value=${set.reps != null ? set.reps : ''}
+                    onChange=${e => updateSet(record.id, set.id, {
+                      reps: e.target.value !== '' ? parseInt(e.target.value, 10) : null
+                    })}
+                    placeholder="0" min="0"
+                    style=${{ ...rs, ...(rs.backgroundColor ? { fontWeight: 700 } : {}) }} />
+                </td>
+                <td style=${{ textAlign: 'center', fontSize: 12, fontWeight: 600,
+                  color: rm != null ? '#e65100' : 'var(--text-muted)' }}>
+                  ${fmtRM(rm)}
+                </td>
+                <td>
+                  <button className="btn btn-danger" style=${{ padding: '2px 6px', fontSize: 14 }}
+                    onClick=${() => removeSet(record.id, set.id)}>×</button>
+                </td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+
+      <button className="btn btn-ghost" onClick=${() => addSet(record.id)}>＋ セット追加</button>
+
+      ${history.length > 0 && html`
+        <div style=${{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+          <div style=${{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '.4px', marginBottom: 5 }}>
+            直近の記録
+          </div>
+          ${history.map((h, hi) => {
+            const labels = ['前回', '前々回', '3回前'];
+            const thresh = (histRM != null && maxW != null) ? maxW * 0.6 : null;
+            const withEff = h.sets.map(s => ({ ...s, effW: s.weightType === 'bodyweight' ? h.bodyWeight : s.weight }));
+            const filtered = thresh != null ? withEff.filter(s => s.effW == null || s.effW >= thresh) : withEff;
+            const deduped = filtered.reduce((acc, s) => {
+              const prev = acc[acc.length - 1];
+              return (!prev || prev.effW !== s.effW) ? [...acc, s] : acc;
+            }, []);
+            const setsStr = deduped
+              .filter(s => s.reps != null || s.weight != null)
+              .map(s => {
+                const isBW = s.weightType === 'bodyweight';
+                const w = isBW ? (h.bodyWeight != null ? '体重' + h.bodyWeight + 'kg' : '体重') : (s.weight != null ? s.weight + 'kg' : '--');
+                return w + '×' + (s.reps != null ? s.reps : '--');
+              }).join('  /  ');
+            if (!setsStr) return null;
+            return html`
+              <div key=${hi} style=${{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 3, fontSize: 12 }}>
+                <span style=${{ color: 'var(--text-muted)', flexShrink: 0, fontSize: 11, minWidth: 80 }}>
+                  ${labels[hi]}(${h.date.slice(5).replace('-', '/')})
+                </span>
+                <span style=${{ color: 'var(--text)', lineHeight: 1.6 }}>${setsStr}</span>
+              </div>
+            `;
+          })}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+// ── New session ──
+function NewSession({ navigate }) {
+  const exercises = getExercises();
+  const menus     = getMenus();
+  const draft     = loadDraft();
+
+  const form = useSessionForm({
+    date:       draft?.date || todayStr(),
+    bodyWeight: draft?.bodyWeight ?? null,
+    records:    draft?.records || [],
+  });
+
+  const [hasDraft] = useState(!!(draft?.records?.length));
+  const allSessions = getSessions().sort((a, b) => b.date.localeCompare(a.date));
+
+  // Auto-save draft on every change
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      date: form.date, bodyWeight: form.bodyWeight, records: form.records,
+    }));
+  }, [form.date, form.bodyWeight, form.records]);
+
+  const discardDraft = () => {
+    clearDraft();
+    form.setDate(todayStr());
+    form.setBW('');
+    form.setRecords([]);
+  };
+
+  const save = () => {
+    if (form.records.filter(r => r.exerciseId && r.sets.length > 0).length === 0) {
+      alert('種目を1つ以上追加してください');
+      return;
+    }
+    const session = {
+      id: genId(),
+      date:       form.date,
+      bodyWeight: form.bw,
+      exercises:  form.records.filter(r => r.exerciseId && r.sets.length > 0),
+    };
+    const all = getSessions();
+    all.push(session);
+    saveSessions(all);
+    updateMaxWeights(session);
+    clearDraft();
+    navigate({ page: 'sessions' });
+  };
+
+  return html`<div>
+    <div className="page-title">新規セッション</div>
+
+    ${hasDraft && form.records.length > 0 && html`
+      <div className="draft-banner">
+        <span>📝 入力途中のデータを復元しました</span>
+        <button className="btn btn-sm" style=${{ background: 'none', border: '1px solid #ffc107', color: '#6d4c00', padding: '4px 10px' }}
+          onClick=${discardDraft}>破棄</button>
+      </div>
+    `}
+
+    ${menus.length > 0 && html`
+      <div className="card" style=${{ marginBottom: 10 }}>
+        <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>メニューを読み込む</div>
+        <div style=${{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          ${menus.map(menu => html`
+            <button key=${menu.id} className="btn btn-secondary btn-sm"
+              onClick=${() => form.loadMenu(menu)}>
+              ${menu.name}
+            </button>
+          `)}
+        </div>
+      </div>
+    `}
+
+    <div className="card">
+      <div className="row">
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">日付</label>
+          <input type="date" className="input" value=${form.date} onChange=${e => form.setDate(e.target.value)} />
+        </div>
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">体重 (kg)</label>
+          <input type="number" className="input" placeholder="75.0" value=${form.bodyWeight}
+            onChange=${e => form.setBW(e.target.value)} step="0.1" min="0" />
+        </div>
+      </div>
+    </div>
+
+    ${form.records.map(record => html`
+      <${ExerciseCard} key=${record.id}
+        record=${record} exercises=${exercises} bw=${form.bw}
+        allSessions=${allSessions}
+        targetReps=${form.targetReps} setTargetReps=${form.setTargetReps}
+        removeExercise=${form.removeExercise}
+        updateRecord=${form.updateRecord}
+        addSet=${form.addSet} removeSet=${form.removeSet} updateSet=${form.updateSet}
+      />
+    `)}
+
+    <button className="btn btn-ghost" onClick=${() => form.addExercise(exercises)} style=${{ marginBottom: 8 }}>
+      ＋ 種目を追加
+    </button>
+
+    ${form.records.length > 0 && html`
+      <button className="btn btn-primary" onClick=${save} style=${{ marginTop: 4 }}>
+        セッションを保存
+      </button>
+    `}
+  </div>`;
+}
+
+// ── Edit session ──
+function EditSession({ navigate, sessionId }) {
+  const sessions = getSessions();
+  const session  = sessions.find(s => s.id === sessionId);
+  const exercises = getExercises();
+  const menus     = getMenus();
+
+  if (!session) return html`
+    <div>
+      <button onClick=${() => navigate({ page: 'sessions' })} className="btn btn-secondary btn-sm" style=${{ marginBottom: 16 }}>← 戻る</button>
+      <p style=${{ color: 'var(--text-muted)' }}>セッションが見つかりません</p>
+    </div>
+  `;
+
+  const form = useSessionForm({
+    date:       session.date,
+    bodyWeight: session.bodyWeight,
+    records:    session.exercises.map(e => ({ ...e, sets: e.sets.map(s => ({ ...s })) })),
+  });
+
+  const allSessions = sessions.filter(s => s.id !== sessionId).sort((a, b) => b.date.localeCompare(a.date));
+
+  const save = () => {
+    const updated = {
+      ...session,
+      date:       form.date,
+      bodyWeight: form.bw,
+      exercises:  form.records.filter(r => r.exerciseId && r.sets.length > 0),
+    };
+    saveSessions(sessions.map(s => s.id === sessionId ? updated : s));
+    recalcAllMaxWeights();
+    navigate({ page: 'session-detail', params: { id: sessionId } });
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'session-detail', params: { id: sessionId } })}
+        className="btn btn-secondary btn-sm">← 戻る</button>
+      <div className="page-title" style=${{ marginBottom: 0 }}>セッションを編集</div>
+      <div style=${{ width: 60 }}></div>
+    </div>
+
+    <div className="card">
+      <div className="row">
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">日付</label>
+          <input type="date" className="input" value=${form.date} onChange=${e => form.setDate(e.target.value)} />
+        </div>
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">体重 (kg)</label>
+          <input type="number" className="input" placeholder="75.0" value=${form.bodyWeight}
+            onChange=${e => form.setBW(e.target.value)} step="0.1" min="0" />
+        </div>
+      </div>
+    </div>
+
+    ${form.records.map(record => html`
+      <${ExerciseCard} key=${record.id}
+        record=${record} exercises=${exercises} bw=${form.bw}
+        allSessions=${allSessions}
+        targetReps=${form.targetReps} setTargetReps=${form.setTargetReps}
+        removeExercise=${form.removeExercise}
+        updateRecord=${form.updateRecord}
+        addSet=${form.addSet} removeSet=${form.removeSet} updateSet=${form.updateSet}
+      />
+    `)}
+
+    <button className="btn btn-ghost" onClick=${() => form.addExercise(exercises)} style=${{ marginBottom: 8 }}>
+      ＋ 種目を追加
+    </button>
+
+    <button className="btn btn-primary" onClick=${save} style=${{ marginTop: 4 }}>
+      変更を保存
+    </button>
+  </div>`;
+}
+
+// ── Exercises list ──
+function Exercises({ navigate }) {
+  const [exercises] = useState(() => getExercises());
+  const sorted = sortedByMG(exercises);
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <div className="page-title" style=${{ marginBottom: 0 }}>種目管理</div>
+      <div className="row" style=${{ gap: 6 }}>
+        <button className="btn btn-secondary btn-sm" onClick=${() => navigate({ page: 'menus' })}>📝 メニュー</button>
+        <button className="btn btn-secondary btn-sm" onClick=${() => navigate({ page: 'exercise-form' })}>＋ 追加</button>
+      </div>
+    </div>
+
+    ${MG_ORDER.map(mg => {
+      const info  = COLORS[mg];
+      const group = sorted.filter(e => e.muscleGroup === mg);
+      return html`
+        <div key=${mg}>
+          <div className="section-title" style=${{ marginTop: 12 }}>
+            <span className="badge" style=${{ backgroundColor: info.bg, color: info.text }}>${info.label}</span>
+          </div>
+          ${group.length === 0 ? html`
+            <p style=${{ fontSize: 13, color: 'var(--text-muted)', padding: '4px 0 8px' }}>種目なし</p>
+          ` : group.map(ex => html`
+            <div key=${ex.id} className="card" style=${{ cursor: 'pointer', marginBottom: 8 }}
+              onClick=${() => navigate({ page: 'exercise-form', params: { id: ex.id } })}>
+              <div className="row-between">
+                <div style=${{ flex: 1 }}>
+                  <div style=${{ fontWeight: 600, fontSize: 15 }}>
+                    ${ex.name}
+                    ${ex.isBig3 ? html`<span className="chip" style=${{ marginLeft: 8 }}>BIG3</span>` : ''}
+                    ${ex.isPriority && !ex.isBig3 ? html`<span className="chip" style=${{ marginLeft: 8 }}>重点</span>` : ''}
+                  </div>
+                  <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>基準 ${ex.standardReps} rep</div>
+                  ${ex.subExercises.length > 0 && html`
+                    <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                      派生: ${ex.subExercises.map(s => s.name).join('、')}
+                    </div>
+                  `}
+                </div>
+                <div style=${{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                  ${ex.maxWeight != null && html`
+                    <div style=${{ fontSize: 18, fontWeight: 700, color: 'var(--primary)' }}>${ex.maxWeight}kg</div>
+                  `}
+                  <span style=${{ color: 'var(--text-muted)', fontSize: 20 }}>›</span>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>
+      `;
+    })}
+  </div>`;
+}
+
+// ── Exercise form ──
+function ExerciseForm({ navigate, exerciseId }) {
+  const exercises = getExercises();
+  const existing  = exerciseId ? exercises.find(e => e.id === exerciseId) || null : null;
+
+  const [name,       setName]    = useState(existing?.name || '');
+  const [mg,         setMG]      = useState(existing?.muscleGroup || 'chest');
+  const [stdReps,    setStd]     = useState(String(existing?.standardReps || 8));
+  const [isBig3,     setBig3]    = useState(existing?.isBig3 || false);
+  const [isPriority, setPrio]    = useState(existing?.isPriority || false);
+  const [maxW,       setMaxW]    = useState(existing?.maxWeight != null ? String(existing.maxWeight) : '');
+  const [subs,       setSubs]    = useState(existing?.subExercises || []);
+  const [newSub,     setNewSub]  = useState('');
+
+  const save = () => {
+    if (!name.trim()) { alert('種目名を入力してください'); return; }
+    const updated = {
+      id: existing?.id || genId(),
+      name: name.trim(), muscleGroup: mg,
+      standardReps: parseInt(stdReps, 10) || 8,
+      isBig3, isPriority,
+      maxWeight: maxW !== '' ? parseFloat(maxW) : null,
+      subMaxWeights: existing?.subMaxWeights || {},
+      subExercises: subs,
+    };
+    saveExercises(existing
+      ? exercises.map(e => e.id === existing.id ? updated : e)
+      : [...exercises, updated]
+    );
+    navigate({ page: 'exercises' });
+  };
+
+  const del = () => {
+    if (!confirm('この種目を削除しますか？')) return;
+    saveExercises(exercises.filter(e => e.id !== exerciseId));
+    navigate({ page: 'exercises' });
+  };
+
+  const addSub = () => {
+    if (!newSub.trim()) return;
+    setSubs(p => [...p, { id: genId(), name: newSub.trim() }]);
+    setNewSub('');
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'exercises' })} className="btn btn-secondary btn-sm">← 戻る</button>
+      ${existing && html`<button onClick=${del} className="btn btn-danger btn-sm">削除</button>`}
+    </div>
+    <div className="page-title">${existing ? '種目を編集' : '種目を追加'}</div>
+
+    <div className="card">
+      <div className="form-group">
+        <label className="form-label">種目名</label>
+        <input className="input" value=${name} onChange=${e => setName(e.target.value)} placeholder="例: ベンチプレス" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">対象部位</label>
+        <select className="input" value=${mg} onChange=${e => setMG(e.target.value)}>
+          ${MG_ORDER.map(k => html`<option key=${k} value=${k}>${COLORS[k].label}</option>`)}
+        </select>
+      </div>
+      <div className="row" style=${{ gap: 12 }}>
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">基準 rep数</label>
+          <input type="number" className="input" value=${stdReps} onChange=${e => setStd(e.target.value)} min="1" />
+        </div>
+        <div className="form-group" style=${{ flex: 1 }}>
+          <label className="form-label">最高重量 (kg)</label>
+          <input type="number" className="input" value=${maxW} onChange=${e => setMaxW(e.target.value)} placeholder="自動更新" step="0.5" min="0" />
+        </div>
+      </div>
+      <div className="switch-row">
+        <span>BIG3種目</span>
+        <label className="toggle">
+          <input type="checkbox" checked=${isBig3} onChange=${e => setBig3(e.target.checked)} />
+          <span className="toggle-slider"></span>
+        </label>
+      </div>
+      <div className="switch-row">
+        <span>重点種目</span>
+        <label className="toggle">
+          <input type="checkbox" checked=${isPriority} onChange=${e => setPrio(e.target.checked)} />
+          <span className="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div className="section-title" style=${{ marginTop: 12 }}>派生種目（サブ種目）</div>
+    <div className="card">
+      ${subs.map(sub => html`
+        <div key=${sub.id} className="row-between" style=${{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style=${{ fontSize: 14 }}>${sub.name}</span>
+          <button className="btn btn-danger btn-sm" onClick=${() => setSubs(p => p.filter(s => s.id !== sub.id))}>削除</button>
+        </div>
+      `)}
+      <div className="row" style=${{ marginTop: subs.length > 0 ? 10 : 0, gap: 8 }}>
+        <input className="input" value=${newSub} onChange=${e => setNewSub(e.target.value)}
+          placeholder="例: ポーズベンチプレス"
+          onKeyDown=${e => e.key === 'Enter' && addSub()}
+          style=${{ flex: 1 }} />
+        <button className="btn btn-secondary btn-sm" onClick=${addSub} style=${{ whiteSpace: 'nowrap' }}>追加</button>
+      </div>
+    </div>
+
+    <button className="btn btn-primary" onClick=${save} style=${{ marginTop: 8 }}>
+      ${existing ? '保存する' : '種目を追加する'}
+    </button>
+  </div>`;
+}
+
+// ── Stats ──
+function Stats() {
+  const exercises = getExercises();
+  const sessions  = getSessions().sort((a, b) => a.date.localeCompare(b.date));
+  const norm = v => (v == null || v === '') ? null : v;
+
+  function getChartData(exerciseId, subExerciseId) {
+    const data = [];
+    for (const ses of sessions) {
+      const rec = ses.exercises.find(r =>
+        r.exerciseId === exerciseId && norm(r.subExerciseId) === norm(subExerciseId)
+      );
+      if (!rec) continue;
+      let maxW = null, maxRM = null;
+      rec.sets.forEach(set => {
+        const w = set.weightType === 'bodyweight' ? ses.bodyWeight : set.weight;
+        if (w != null) {
+          if (maxW == null || w > maxW) maxW = w;
+          const rm = calcRM(w, set.reps);
+          if (rm != null && (maxRM == null || rm > maxRM)) maxRM = rm;
+        }
+      });
+      if (maxW != null) data.push({ date: ses.date, weight: maxW, rm: maxRM });
+    }
+    return data;
+  }
+
+  function renderExCard(ex, subExerciseId) {
+    const data    = getChartData(ex.id, subExerciseId);
+    if (!data.length) return null;
+    const colors  = COLORS[ex.muscleGroup];
+    const maxW    = getMaxWeight(ex, subExerciseId);
+    const histRM  = getHistoricalMaxRM(ex.id, subExerciseId);
+    const subEx   = subExerciseId ? ex.subExercises.find(s => s.id === subExerciseId) : null;
+    const title   = subEx ? ex.name + ' — ' + subEx.name : ex.name;
+    const latest  = data[data.length - 1];
+    const prev    = data.length >= 2 ? data[data.length - 2] : null;
+    const wDelta  = prev ? latest.weight - prev.weight : null;
+    const rmDelta = (prev?.rm != null && latest.rm != null) ? latest.rm - prev.rm : null;
+
+    return html`
+      <div key=${ex.id + (subExerciseId || '')} className="stat-card">
+        <div className="row-between" style=${{ marginBottom: 10 }}>
+          <div className="stat-name">${title}</div>
+          <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>${colors.label}</span>
+        </div>
+
+        <div style=${{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div className="stat-label">MAX重量</div>
+            <div className="stat-max">${maxW != null ? maxW + 'kg' : '--'}</div>
+            ${wDelta != null && html`
+              <div style=${{ fontSize: 12, fontWeight: 600, marginTop: 2,
+                color: wDelta > 0 ? '#4caf50' : wDelta < 0 ? '#f44336' : 'var(--text-muted)' }}>
+                ${wDelta > 0 ? '▲' : wDelta < 0 ? '▼' : '─'} ${Math.abs(wDelta)}kg
+              </div>
+            `}
+          </div>
+          ${histRM != null && html`
+            <div>
+              <div className="stat-label">MAX 推定1RM</div>
+              <div style=${{ fontSize: 22, fontWeight: 700, color: '#e65100' }}>${fmtRM(histRM)}</div>
+              ${rmDelta != null && html`
+                <div style=${{ fontSize: 12, fontWeight: 600, marginTop: 2,
+                  color: rmDelta > 0 ? '#4caf50' : rmDelta < 0 ? '#f44336' : 'var(--text-muted)' }}>
+                  ${rmDelta > 0 ? '▲' : rmDelta < 0 ? '▼' : '─'} ${(Math.round(Math.abs(rmDelta) * 10) / 10)}kg
+                </div>
+              `}
+            </div>
+          `}
+          <div>
+            <div className="stat-label">基準 rep数</div>
+            <div style=${{ fontSize: 18, fontWeight: 700 }}>${ex.standardReps} rep</div>
+          </div>
+        </div>
+
+        ${html`<${WorkoutChart} data=${data} />`}
+      </div>
+    `;
+  }
+
+  const big3     = exercises.filter(e => e.isBig3);
+  const priority = exercises.filter(e => e.isPriority && !e.isBig3);
+  const others   = exercises.filter(e => !e.isBig3 && !e.isPriority);
+
+  function renderGroup(exList, label) {
+    const cards = [];
+    for (const ex of exList) {
+      const c = renderExCard(ex, undefined);
+      if (c) cards.push(c);
+      for (const sub of ex.subExercises) {
+        const cs = renderExCard(ex, sub.id);
+        if (cs) cards.push(cs);
+      }
+    }
+    if (!cards.length) return null;
+    return html`<div key=${label}><div className="section-title">${label}</div>${cards}</div>`;
+  }
+
+  if (exercises.length === 0) return html`
+    <div><div className="page-title">統計・記録</div>
+    <div className="empty-state"><div className="icon">📊</div><p>種目を追加してください</p></div></div>
+  `;
+
+  const hasData = sessions.length > 0;
+
+  return html`<div>
+    <div className="page-title">統計・記録</div>
+    ${!hasData && html`
+      <div className="empty-state"><div className="icon">📊</div>
+      <p>セッションを記録すると<br/>グラフが表示されます</p></div>
+    `}
+    ${renderGroup(big3, 'BIG3')}
+    ${renderGroup(priority, '重点種目')}
+    ${renderGroup(others, 'その他')}
+  </div>`;
+}
+
+// ── Menu list ──
+function MenuList({ navigate }) {
+  const [menus, setMenus] = useState(() => getMenus());
+  const exercises = getExercises();
+
+  const del = id => {
+    if (!confirm('このメニューを削除しますか？')) return;
+    const upd = menus.filter(m => m.id !== id);
+    saveMenus(upd); setMenus(upd);
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'exercises' })} className="btn btn-secondary btn-sm">← 種目</button>
+      <div className="page-title" style=${{ marginBottom: 0 }}>メニュー管理</div>
+      <button onClick=${() => navigate({ page: 'menu-form' })} className="btn btn-secondary btn-sm">＋ 追加</button>
+    </div>
+
+    ${menus.length === 0 ? html`
+      <div className="empty-state">
+        <div className="icon">📝</div>
+        <p>メニューがまだありません<br/>よく使う種目の組み合わせを登録しましょう</p>
+      </div>
+    ` : menus.map(menu => html`
+      <div key=${menu.id} className="card">
+        <div className="row-between" style=${{ marginBottom: 10 }}>
+          <div style=${{ fontWeight: 700, fontSize: 16 }}>${menu.name}</div>
+          <div className="row" style=${{ gap: 6 }}>
+            <button className="btn btn-secondary btn-sm"
+              onClick=${() => navigate({ page: 'menu-form', params: { id: menu.id } })}>編集</button>
+            <button className="btn btn-danger btn-sm" onClick=${() => del(menu.id)}>削除</button>
+          </div>
+        </div>
+        ${menu.entries.map((entry, i) => {
+          const ex     = exercises.find(e => e.id === entry.exerciseId);
+          const sub    = ex?.subExercises.find(s => s.id === entry.subExerciseId);
+          const colors = COLORS[(ex?.muscleGroup) || 'chest'];
+          return html`
+            <div key=${i} style=${{ display: 'flex', alignItems: 'center', gap: 8,
+              padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
+                ${colors.label}
+              </span>
+              <span style=${{ fontSize: 14 }}>
+                ${ex?.name || '不明'}
+                ${sub ? html`<span style=${{ color: 'var(--text-muted)' }}> — ${sub.name}</span>` : ''}
+              </span>
+              <span style=${{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+                基準 ${ex?.standardReps || '--'} rep
+              </span>
+            </div>
+          `;
+        })}
+      </div>
+    `)}
+  </div>`;
+}
+
+// ── Menu form ──
+function MenuForm({ navigate, menuId }) {
+  const exercises = getExercises();
+  const menus     = getMenus();
+  const existing  = menuId ? menus.find(m => m.id === menuId) || null : null;
+
+  const [name,    setName]    = useState(existing?.name || '');
+  const [entries, setEntries] = useState(existing?.entries || []);
+
+  const addEntry    = () => exercises.length && setEntries(p => [...p, { exerciseId: exercises[0].id, subExerciseId: undefined }]);
+  const removeEntry = idx => setEntries(p => p.filter((_, i) => i !== idx));
+  const updateEntry = (idx, patch) => setEntries(p => p.map((e, i) => i === idx ? { ...e, ...patch } : e));
+
+  const save = () => {
+    if (!name.trim()) { alert('メニュー名を入力してください'); return; }
+    if (!entries.length) { alert('種目を1つ以上追加してください'); return; }
+    const updated = { id: existing?.id || genId(), name: name.trim(), entries };
+    saveMenus(existing ? menus.map(m => m.id === existing.id ? updated : m) : [...menus, updated]);
+    navigate({ page: 'menus' });
+  };
+
+  const del = () => {
+    if (!confirm('このメニューを削除しますか？')) return;
+    saveMenus(menus.filter(m => m.id !== menuId));
+    navigate({ page: 'menus' });
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'menus' })} className="btn btn-secondary btn-sm">← 戻る</button>
+      ${existing && html`<button onClick=${del} className="btn btn-danger btn-sm">削除</button>`}
+    </div>
+    <div className="page-title">${existing ? 'メニューを編集' : 'メニューを追加'}</div>
+
+    <div className="card">
+      <div className="form-group" style=${{ marginBottom: 0 }}>
+        <label className="form-label">メニュー名</label>
+        <input className="input" value=${name} onChange=${e => setName(e.target.value)} placeholder="例: 胸の日、脚トレなど" />
+      </div>
+    </div>
+
+    <div className="section-title" style=${{ marginTop: 8 }}>種目リスト</div>
+    ${entries.map((entry, idx) => {
+      const ex     = exercises.find(e => e.id === entry.exerciseId);
+      const colors = COLORS[(ex?.muscleGroup) || 'chest'];
+      return html`
+        <div key=${idx} className="card" style=${{ marginBottom: 8 }}>
+          <div className="exercise-header">
+            <div style=${{ flex: 1 }}>
+              <div className="row" style=${{ marginBottom: ex?.subExercises.length ? 6 : 0 }}>
+                <select className="input" value=${entry.exerciseId} style=${{ flex: 1 }}
+                  onChange=${e => updateEntry(idx, { exerciseId: e.target.value, subExerciseId: undefined })}>
+                  ${renderExOptions(exercises)}
+                </select>
+                <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text }}>
+                  ${colors.label}
+                </span>
+              </div>
+              ${ex?.subExercises.length > 0 && html`
+                <select className="input" value=${entry.subExerciseId || ''} style=${{ fontSize: 13 }}
+                  onChange=${e => updateEntry(idx, { subExerciseId: e.target.value || undefined })}>
+                  <option value="">サブ種目なし（メイン）</option>
+                  ${ex.subExercises.map(s => html`<option key=${s.id} value=${s.id}>${s.name}</option>`)}
+                </select>
+              `}
+            </div>
+            <button className="btn btn-danger"
+              style=${{ marginLeft: 4, alignSelf: 'flex-start', padding: '8px' }}
+              onClick=${() => removeEntry(idx)}>✕</button>
+          </div>
+          ${ex && html`
+            <div style=${{ fontSize: 12, color: 'var(--text-muted)' }}>
+              基準 ${ex.standardReps} rep
+              ${ex.isBig3 ? html`<span className="chip" style=${{ marginLeft: 6 }}>BIG3</span>` : ''}
+              ${ex.isPriority && !ex.isBig3 ? html`<span className="chip" style=${{ marginLeft: 6 }}>重点</span>` : ''}
+            </div>
+          `}
+        </div>
+      `;
+    })}
+
+    <button className="btn btn-ghost" onClick=${addEntry} style=${{ marginBottom: 8 }}>
+      ＋ 種目を追加
+    </button>
+    <button className="btn btn-primary" onClick=${save} style=${{ marginTop: 4 }}>
+      ${existing ? '保存する' : 'メニューを追加する'}
+    </button>
+  </div>`;
+}
+
+// ── Settings ──
+function Settings({ navigate }) {
+  const [importPreview, setImportPreview] = useState(null);
+  const [ioStatus,      setIoStatus]      = useState(null);
+
+  const handleFileSelect = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIoStatus(null);
+    try {
+      const data = await parseImportFile(file);
+      setImportPreview(data);
+    } catch (err) {
+      setIoStatus({ ok: false, msg: err.message });
+    }
+    e.target.value = '';
+  };
+
+  const confirmImport = () => {
+    if (!importPreview) return;
+    const sesCount = (importPreview.sessions || []).length;
+    const exCount  = (importPreview.exercises || []).length;
+    if (!confirm('現在のデータをすべてインポートしたデータで置き換えます。\nセッション: ' + sesCount + '件 / 種目: ' + exCount + '件\n\nよろしいですか？')) return;
+    try {
+      if (Array.isArray(importPreview.exercises)) saveExercises(importPreview.exercises);
+      if (Array.isArray(importPreview.sessions))  saveSessions(importPreview.sessions);
+      if (Array.isArray(importPreview.menus))     saveMenus(importPreview.menus);
+      setImportPreview(null);
+      setIoStatus({ ok: true, msg: 'インポートが完了しました！ホームに戻ると反映されます。' });
+    } catch (err) {
+      setIoStatus({ ok: false, msg: 'インポートに失敗しました: ' + err.message });
+    }
+  };
+
+  return html`<div>
+    <div className="row-between" style=${{ marginBottom: 16 }}>
+      <button onClick=${() => navigate({ page: 'home' })} className="btn btn-secondary btn-sm">← ホーム</button>
+      <div className="page-title" style=${{ marginBottom: 0 }}>設定</div>
+      <div style=${{ width: 60 }}></div>
+    </div>
+
+    <div className="section-title">データのバックアップ・共有</div>
+    <div className="card">
+      <div style=${{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.7 }}>
+        エクスポートしたファイルをメールや共有フォルダで別のデバイスに送り、インポートすることでPCとスマホのデータを共有できます。
+      </div>
+      <div style=${{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>エクスポート</div>
+      <div style=${{ display: 'flex', gap: 8, marginBottom: 18 }}>
+        <button className="btn btn-secondary" style=${{ flex: 1 }} onClick=${exportAllData}>
+          ↓ 全データ (JSON)
+        </button>
+        <button className="btn btn-secondary" style=${{ flex: 1 }} onClick=${exportSessionsCSV}>
+          ↓ 記録 (CSV)
+        </button>
+      </div>
+      <div style=${{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>インポート（全データ置き換え）</div>
+      ${importPreview ? html`
+        <div style=${{ padding: '12px 14px', borderRadius: 8, background: 'var(--surface2)', marginBottom: 10 }}>
+          <div style=${{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>インポート内容の確認:</div>
+          <div style=${{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 2 }}>
+            <div>📋 セッション: ${(importPreview.sessions || []).length} 件</div>
+            <div>🏋️ 種目: ${(importPreview.exercises || []).length} 件</div>
+            <div>📝 メニュー: ${(importPreview.menus || []).length} 件</div>
+            ${importPreview.exported ? html`<div>📅 エクスポート日: ${importPreview.exported}</div>` : ''}
+          </div>
+        </div>
+        <div style=${{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" style=${{ flex: 1 }}
+            onClick=${() => { setImportPreview(null); setIoStatus(null); }}>キャンセル</button>
+          <button className="btn btn-primary" style=${{ flex: 1, padding: '10px' }} onClick=${confirmImport}>
+            置き換えて実行
+          </button>
+        </div>
+      ` : html`
+        <label style=${{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: '11px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 14,
+          fontWeight: 600, color: 'var(--text-muted)', width: '100%',
+          border: '1px dashed var(--border)',
+        }}>
+          ↑ JSONファイルを選択
+          <input type="file" accept=".json" style=${{ display: 'none' }} onChange=${handleFileSelect} />
+        </label>
+      `}
+      ${ioStatus && html`
+        <div style=${{
+          padding: '10px 14px', borderRadius: 8, marginTop: 10, fontSize: 13,
+          backgroundColor: ioStatus.ok ? 'rgba(46,204,113,0.12)' : 'rgba(229,57,53,0.1)',
+          color: ioStatus.ok ? '#2e7d32' : '#c62828',
+          border: '1px solid ' + (ioStatus.ok ? '#4caf50' : '#ef9a9a'),
+        }}>${ioStatus.msg}</div>
+      `}
+    </div>
+
+    <div className="section-title" style=${{ marginTop: 4 }}>スマートフォンにインストール（PWA）</div>
+    <div className="card">
+      <div style=${{ fontSize: 13, lineHeight: 1.8 }}>
+        <div style=${{ fontWeight: 600, marginBottom: 4 }}>Android（Chrome）</div>
+        <div style=${{ color: 'var(--text-muted)', marginBottom: 12 }}>
+          ① このページをChromeで開く<br/>
+          ② メニュー（⋮）→「アプリをインストール」<br/>
+          ③ またはアドレスバーのインストールアイコンをタップ
+        </div>
+        <div style=${{ fontWeight: 600, marginBottom: 4 }}>iPhone（Safari）</div>
+        <div style=${{ color: 'var(--text-muted)' }}>
+          ① このページをSafariで開く<br/>
+          ② 共有ボタン（□↑）をタップ<br/>
+          ③「ホーム画面に追加」を選択
+        </div>
+      </div>
+    </div>
+
+    <div className="section-title" style=${{ marginTop: 4 }}>データ管理</div>
+    <div className="card">
+      <div style=${{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+        データはこのブラウザのローカルストレージに保存されます。
+        PCとスマホでデータを共有する場合は「全データ (JSON)」でエクスポートし、もう一方のデバイスでインポートしてください。
+        CSVはExcelなどで記録を確認するのに使えます（インポート非対応）。
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── App root ──
+function App() {
+  const [nav, setNav] = useState({ page: 'home' });
+  const navigate = state => { setNav(state); window.scrollTo(0, 0); };
+
+  const renderPage = () => {
+    const p = nav.params || {};
+    switch (nav.page) {
+      case 'home':           return html`<${Home} navigate=${navigate} />`;
+      case 'new-session':    return html`<${NewSession} navigate=${navigate} />`;
+      case 'sessions':       return html`<${Sessions} navigate=${navigate} />`;
+      case 'session-detail': return html`<${SessionDetail} navigate=${navigate} sessionId=${p.id || ''} />`;
+      case 'edit-session':   return html`<${EditSession} navigate=${navigate} sessionId=${p.id || ''} />`;
+      case 'exercises':      return html`<${Exercises} navigate=${navigate} />`;
+      case 'exercise-form':  return html`<${ExerciseForm} navigate=${navigate} exerciseId=${p.id} />`;
+      case 'menus':          return html`<${MenuList} navigate=${navigate} />`;
+      case 'menu-form':      return html`<${MenuForm} navigate=${navigate} menuId=${p.id} />`;
+      case 'stats':          return html`<${Stats} navigate=${navigate} />`;
+      case 'settings':       return html`<${Settings} navigate=${navigate} />`;
+      default:               return html`<${Home} navigate=${navigate} />`;
+    }
+  };
+
+  return html`
+    <div className="app">
+      <main className="main-content">${renderPage()}</main>
+      <${Navigation} currentPage=${nav.page} navigate=${navigate} />
+    </div>
+  `;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
