@@ -535,7 +535,8 @@ function generateShareImage(session, exercises) {
       const ry = cy + (rowH - f(14)) / 2;
       ctx.textAlign = 'center';
       ctx.fillStyle = C.muted; ctx.font = `${f(13)}px system-ui,sans-serif`;
-      ctx.fillText(String(si + 1), x1, ry);
+      const isDrop = !!set.isDrop;
+      ctx.fillText((isDrop ? '└' : '') + String(si + 1), isDrop ? x1 + f(6) : x1, ry);
       ctx.fillStyle = C.text; ctx.font = `${f(14)}px system-ui,sans-serif`;
       const ws = isBW ? '体重' + (session.bodyWeight != null ? '(' + session.bodyWeight + 'kg)' : '') : (set.weight != null ? set.weight + 'kg' : '--');
       ctx.fillText(ws, x2, ry);
@@ -813,66 +814,88 @@ function SessionDetail({ navigate, sessionId }) {
       ${session.bodyWeight != null && html`<span className="chip">体重 ${session.bodyWeight}kg</span>`}
     </div>
 
-    ${session.exercises.map(record => {
-      const ex     = exercises.find(e => e.id === record.exerciseId);
-      const subEx  = ex && record.subExerciseId ? ex.subExercises.find(s => s.id === record.subExerciseId) : null;
-      const colors = COLORS[(ex && ex.muscleGroup) || 'chest'];
-      const std    = ex?.standardReps || 0;
-      const maxW   = ex ? getMaxWeight(ex, record.subExerciseId) : null;
-
-      return html`
-        <div key=${record.id} className="card">
-          <div className="row-between" style=${{ marginBottom: 6 }}>
-            <div>
-              <span style=${{ fontWeight: 700, fontSize: 15 }}>${ex?.name || '不明'}</span>
-              ${subEx && html`<span style=${{ color: 'var(--text-muted)', fontSize: 13 }}> — ${subEx.name}</span>`}
-            </div>
-            <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text }}>${colors.label}</span>
-          </div>
-          ${maxW != null && html`
-            <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
-              基準 ${std} rep / MAX ${maxW}kg
-            </div>
-          `}
-          <table className="set-table">
-            <thead><tr>
-              <th style=${{ width: 28 }}>Set</th>
-              <th>重量</th>
-              <th>Rep</th>
-              <th>1RM</th>
-            </tr></thead>
-            <tbody>
-              ${record.sets.map((set, si) => {
-                const isBW = set.weightType === 'bodyweight';
-                const wkg  = isBW ? session.bodyWeight : set.weight;
-                const rm   = calcRM(wkg, set.reps);
-                const rs   = repBgStyle(set.reps, std);
-                return html`
-                  <tr key=${set.id}>
-                    <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>${si + 1}</td>
-                    <td style=${{ textAlign: 'center', fontSize: 14 }}>
-                      ${isBW
-                        ? html`<span>体重${session.bodyWeight != null ? html`<span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>(${session.bodyWeight}kg)</span>` : ''}</span>`
-                        : html`<span>${set.weight != null ? set.weight : '--'}kg</span>`}
-                    </td>
-                    <td style=${{ textAlign: 'center' }}>
-                      <span style=${{
-                        backgroundColor: rs.backgroundColor, padding: '3px 8px', borderRadius: 5,
-                        display: 'inline-block', fontSize: 14, fontWeight: rs.backgroundColor ? 700 : 400,
-                      }}>${set.reps != null ? set.reps : '--'} rep</span>
-                    </td>
-                    <td style=${{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: rm != null ? '#e65100' : 'var(--text-muted)' }}>
-                      ${fmtRM(rm)}
-                    </td>
-                  </tr>
-                `;
-              })}
-            </tbody>
-          </table>
-        </div>
-      `;
-    })}
+    ${session.exercises.map(record => html`
+      <${SessionDetailExercise} key=${record.id} record=${record} exercises=${exercises} bodyWeight=${session.bodyWeight} />
+    `)}
   </div>`;
+}
+
+// ── Session detail exercise card (read-only) ──
+function SessionDetailExercise({ record, exercises, bodyWeight }) {
+  const [dropCollapsed, setDropCollapsed] = useState(false);
+  const ex     = exercises.find(e => e.id === record.exerciseId);
+  const subEx  = ex && record.subExerciseId ? ex.subExercises.find(s => s.id === record.subExerciseId) : null;
+  const colors = COLORS[(ex && ex.muscleGroup) || 'chest'];
+  const std    = ex?.standardReps || 0;
+  const maxW   = ex ? getMaxWeight(ex, record.subExerciseId) : null;
+  const dropCount = record.sets.filter(s => s.isDrop).length;
+
+  return html`
+    <div className="card">
+      <div className="row-between" style=${{ marginBottom: 6 }}>
+        <div>
+          <span style=${{ fontWeight: 700, fontSize: 15 }}>${ex?.name || '不明'}</span>
+          ${subEx && html`<span style=${{ color: 'var(--text-muted)', fontSize: 13 }}> — ${subEx.name}</span>`}
+        </div>
+        <span className="badge" style=${{ backgroundColor: colors.bg, color: colors.text }}>${colors.label}</span>
+      </div>
+      ${maxW != null && html`
+        <div style=${{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+          基準 ${std} rep / MAX ${maxW}kg
+        </div>
+      `}
+      <table className="set-table">
+        <thead><tr>
+          <th style=${{ width: 28 }}>Set</th>
+          <th>重量</th>
+          <th>Rep</th>
+          <th>1RM</th>
+        </tr></thead>
+        <tbody>
+          ${record.sets.map((set, si) => {
+            if (dropCollapsed && set.isDrop) return null;
+            const isBW = set.weightType === 'bodyweight';
+            const wkg  = isBW ? bodyWeight : set.weight;
+            const rm   = calcRM(wkg, set.reps);
+            const rs   = repBgStyle(set.reps, std);
+            return html`
+              <tr key=${set.id}>
+                <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, paddingLeft: set.isDrop ? 14 : 2 }}>${set.isDrop ? '└' : ''}${si + 1}</td>
+                <td style=${{ textAlign: 'center', fontSize: 14 }}>
+                  ${isBW
+                    ? html`<span>体重${bodyWeight != null ? html`<span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>(${bodyWeight}kg)</span>` : ''}</span>`
+                    : html`<span>${set.weight != null ? set.weight : '--'}kg</span>`}
+                </td>
+                <td style=${{ textAlign: 'center' }}>
+                  <span style=${{
+                    backgroundColor: rs.backgroundColor, padding: '3px 8px', borderRadius: 5,
+                    display: 'inline-block', fontSize: 14, fontWeight: rs.backgroundColor ? 700 : 400,
+                  }}>${set.reps != null ? set.reps : '--'} rep</span>
+                </td>
+                <td style=${{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: rm != null ? '#e65100' : 'var(--text-muted)' }}>
+                  ${fmtRM(rm)}
+                </td>
+              </tr>
+            `;
+          })}
+          ${dropCollapsed && dropCount > 0 && html`
+            <tr key="drop-summary">
+              <td colSpan=${4} style=${{ textAlign: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, padding: '6px 0' }}
+                onClick=${() => setDropCollapsed(false)}>
+                ▾ ドロップ ${dropCount} セット（タップで展開）
+              </td>
+            </tr>
+          `}
+        </tbody>
+      </table>
+      ${dropCount > 0 && html`
+        <button className="btn btn-sm btn-secondary" style=${{ width: 'auto', padding: '2px 12px', marginTop: 8 }}
+          onClick=${() => setDropCollapsed(c => !c)}>
+          ${dropCollapsed ? '▾ ドロップを展開' : '▴ ドロップを折りたたむ'}
+        </button>
+      `}
+    </div>
+  `;
 }
 
 // ── Shared session form logic ──
@@ -886,14 +909,16 @@ function useSessionForm(initial) {
 
   const loadMenu = menu => setRecords(menu.entries.map(e => ({
     id: genId(), exerciseId: e.exerciseId, subExerciseId: e.subExerciseId,
-    sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null }],
+    dropMode: { on: false, type: 'fixed', value: 10 },
+    sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null, isDrop: false }],
   })));
 
   const addExercise = (exercises) => {
     if (!exercises.length) return;
     setRecords(p => [...p, {
       id: genId(), exerciseId: exercises[0].id, subExerciseId: undefined,
-      sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null }],
+      dropMode: { on: false, type: 'fixed', value: 10 },
+      sets: [{ id: genId(), weight: null, weightType: 'kg', reps: null, isDrop: false }],
     }]);
   };
 
@@ -903,7 +928,17 @@ function useSessionForm(initial) {
   const addSet = recId => setRecords(p => p.map(r => {
     if (r.id !== recId) return r;
     const last = r.sets[r.sets.length - 1];
-    return { ...r, sets: [...r.sets, { id: genId(), weight: last?.weight ?? null, weightType: last?.weightType ?? 'kg', reps: last?.reps ?? null }] };
+    const dm = r.dropMode;
+    const reps = last?.reps ?? null;
+    let weight = last?.weight ?? null;
+    let isDrop = false;
+    if (dm?.on && last && last.weightType === 'kg' && Number.isFinite(last.weight)) {
+      isDrop = true;
+      weight = dm.type === 'percent'
+        ? Math.max(0, Math.ceil(last.weight * (1 - dm.value / 100) / 2.5) * 2.5)
+        : Math.max(0, last.weight - dm.value);
+    }
+    return { ...r, sets: [...r.sets, { id: genId(), weight, weightType: last?.weightType ?? 'kg', reps, isDrop }] };
   }));
 
   const removeSet   = (recId, setId) => setRecords(p => p.map(r => r.id === recId ? { ...r, sets: r.sets.filter(s => s.id !== setId) } : r));
@@ -915,6 +950,11 @@ function useSessionForm(initial) {
 // ── Session form exercise card ──
 function ExerciseCard({ record, exercises, bw, allSessions, targetReps, setTargetReps,
   removeExercise, updateRecord, addSet, removeSet, updateSet }) {
+
+  const [dropCollapsed, setDropCollapsed] = useState(false);
+  const dm = record.dropMode || { on: false, type: 'fixed', value: 10 };
+  const setDM = patch => updateRecord(record.id, { dropMode: { ...dm, ...patch } });
+  const dropCount = record.sets.filter(s => s.isDrop).length;
 
   const ex     = exercises.find(e => e.id === record.exerciseId);
   const colors = COLORS[(ex?.muscleGroup) || 'chest'];
@@ -1005,6 +1045,25 @@ function ExerciseCard({ record, exercises, bw, allSessions, targetReps, setTarge
           : html`<span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>目標rep入力で推奨重量を表示</span>`}
       </div>
 
+      <div className="suggest-row" style=${{ justifyContent: 'flex-start', gap: 10 }}>
+        <button className=${'btn btn-sm ' + (dm.on ? 'btn-primary' : 'btn-secondary')}
+          style=${{ width: 'auto', padding: '4px 12px' }}
+          onClick=${() => setDM({ on: !dm.on })}>
+          ドロップ${dm.on ? 'ON' : 'OFF'}
+        </button>
+        ${dm.on && html`
+          <div className="weight-toggle" style=${{ width: 'auto' }}>
+            <button className=${dm.type === 'fixed' ? 'active' : ''} onClick=${() => setDM({ type: 'fixed' })}>kg減</button>
+            <button className=${dm.type === 'percent' ? 'active' : ''} onClick=${() => setDM({ type: 'percent' })}>%減</button>
+          </div>
+          <input type="number" className="input" min="0" step=${dm.type === 'percent' ? 5 : 2.5}
+            value=${dm.value}
+            onChange=${e => setDM({ value: e.target.value !== '' ? parseFloat(e.target.value) : 0 })}
+            style=${{ width: 56, padding: '4px 8px', fontSize: 13 }} />
+          <span style=${{ color: 'var(--text-muted)', fontSize: 12 }}>${dm.type === 'percent' ? '%' : 'kg'} 減</span>
+        `}
+      </div>
+
       <table className="set-table">
         <thead><tr>
           <th style=${{ width: 22 }}>#</th>
@@ -1016,13 +1075,14 @@ function ExerciseCard({ record, exercises, bw, allSessions, targetReps, setTarge
         </tr></thead>
         <tbody>
           ${record.sets.map((set, si) => {
+            if (dropCollapsed && set.isDrop) return null;
             const isBW = set.weightType === 'bodyweight';
             const wkg  = isBW ? bw : set.weight;
             const rm   = calcRM(wkg, set.reps);
             const rs   = repBgStyle(set.reps, std);
             return html`
               <tr key=${set.id}>
-                <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>${si + 1}</td>
+                <td style=${{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, paddingLeft: set.isDrop ? 12 : 2 }}>${set.isDrop ? '└' : ''}${si + 1}</td>
                 <td>
                   <div className="weight-toggle">
                     <button className=${set.weightType === 'kg' ? 'active' : ''}
@@ -1066,10 +1126,25 @@ function ExerciseCard({ record, exercises, bw, allSessions, targetReps, setTarge
               </tr>
             `;
           })}
+          ${dropCollapsed && dropCount > 0 && html`
+            <tr key="drop-summary">
+              <td colSpan=${6} style=${{ textAlign: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, padding: '6px 0' }}
+                onClick=${() => setDropCollapsed(false)}>
+                ▾ ドロップ ${dropCount} セット（タップで展開）
+              </td>
+            </tr>
+          `}
         </tbody>
       </table>
 
       <button className="btn btn-ghost" onClick=${() => addSet(record.id)}>＋ セット追加</button>
+
+      ${dropCount > 0 && html`
+        <button className="btn btn-sm btn-secondary" style=${{ width: 'auto', padding: '2px 12px', marginTop: 6 }}
+          onClick=${() => setDropCollapsed(c => !c)}>
+          ${dropCollapsed ? '▾ ドロップを展開' : '▴ ドロップを折りたたむ'}
+        </button>
+      `}
 
       ${history.length > 0 && html`
         <div style=${{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
