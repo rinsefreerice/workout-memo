@@ -259,6 +259,11 @@ function loadDraft() {
   return null;
 }
 function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+function getLastBodyWeight() {
+  const ss = getSessions().sort((a, b) => b.date.localeCompare(a.date));
+  for (const s of ss) { if (s.bodyWeight != null) return s.bodyWeight; }
+  return null;
+}
 
 // ── 1RM (Epley variant): 1RM = w × (1 + reps/40) ──
 function calcRM(weight, reps) {
@@ -414,7 +419,7 @@ async function ncLoad(cfg) {
 }
 
 // ── Utilities ──
-const todayStr = () => new Date().toISOString().split('T')[0];
+const todayStr = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-'); };
 const fmtRM = v => v != null ? (Math.round(v * 10) / 10) + 'kg' : '--';
 
 function repBgStyle(reps, stdReps) {
@@ -434,52 +439,118 @@ function _fillRR(ctx, x, y, w, h, r) {
   ctx.closePath(); ctx.fill();
 }
 function generateShareImage(session, exercises) {
-  const W = 1080, PAD = 64, IW = W - PAD * 2;
-  let H = PAD * 2 + 60 + 100 + 38 + 56;
-  if (session.bodyWeight != null) H += 68;
-  session.exercises.forEach(r => { H += 76 + r.sets.length * 60 + 50; });
+  const W = 1080, SC = W / 480;
+  const PAD = Math.round(16 * SC), IW = W - PAD * 2;
+  const f = n => Math.round(n * SC);
+  const C = { bg:'#2d2d2d', surface:'#464646', surface2:'#585858', text:'#f0f0f0', muted:'#a8a8a8', orange:'#e65100' };
+  const CP = f(14), rowH = f(30);
+
+  // Height calculation (mirrors draw sequence)
+  let H = PAD + f(13) + f(4) + f(22) + f(16);
+  if (session.bodyWeight != null) H += f(11) + f(4) * 2 + f(8);
+  session.exercises.forEach(rec => {
+    const ex = exercises.find(e => e.id === rec.exerciseId);
+    const maxW = ex ? getMaxWeight(ex, rec.subExerciseId) : null;
+    let ch = CP + f(15) + f(6) + f(11) + f(8) + rec.sets.length * rowH + CP;
+    if (maxW != null) ch += f(12) + f(8);
+    H += ch + f(10);
+  });
+  H += f(24) + PAD;
+
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
   ctx.textBaseline = 'top';
-  ctx.fillStyle = '#2d2d2d'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
   let y = PAD;
-  ctx.fillStyle = '#e53935'; ctx.font = 'bold 44px system-ui,sans-serif'; ctx.fillText('筋トレメモ', PAD, y); y += 60;
-  ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 80px system-ui,sans-serif'; ctx.fillText(session.date, PAD, y); y += 100;
-  if (session.bodyWeight != null) { ctx.fillStyle = '#a8a8a8'; ctx.font = '48px system-ui,sans-serif'; ctx.fillText('体重 ' + session.bodyWeight + 'kg', PAD, y); y += 68; }
-  ctx.fillStyle = '#505050'; ctx.fillRect(PAD, y, IW, 2); y += 38;
+
+  // App label
+  ctx.fillStyle = C.muted; ctx.font = `${f(13)}px system-ui,sans-serif`;
+  ctx.fillText('筋トレメモ', PAD, y); y += f(13) + f(4);
+
+  // Date (page-title)
+  ctx.fillStyle = C.text; ctx.font = `bold ${f(22)}px system-ui,sans-serif`;
+  ctx.fillText(session.date, PAD, y); y += f(22) + f(16);
+
+  // Body weight chip
+  if (session.bodyWeight != null) {
+    const ct = '体重 ' + session.bodyWeight + 'kg', cf = f(11);
+    ctx.font = `${cf}px system-ui,sans-serif`;
+    const cw = ctx.measureText(ct).width + f(8) * 2, ch = cf + f(4) * 2;
+    ctx.fillStyle = C.surface2; _fillRR(ctx, PAD, y, cw, ch, f(10));
+    ctx.fillStyle = C.muted; ctx.fillText(ct, PAD + f(8), y + f(4));
+    y += ch + f(8);
+  }
+
+  // Exercise cards
   session.exercises.forEach(rec => {
     const ex = exercises.find(e => e.id === rec.exerciseId);
     const subEx = ex && rec.subExerciseId ? ex.subExercises?.find(s => s.id === rec.subExerciseId) : null;
     const col = COLORS[(ex && ex.muscleGroup) || 'chest'];
-    const nm = [ex?.name || '不明', subEx?.name].filter(Boolean).join(' — ');
-    ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 52px system-ui,sans-serif';
-    const nw = ctx.measureText(nm).width;
-    ctx.fillText(nm, PAD, y);
-    ctx.font = 'bold 30px system-ui,sans-serif';
-    const bw = ctx.measureText(col.label).width + 28;
-    ctx.fillStyle = col.bg; _fillRR(ctx, PAD + nw + 20, y + 6, bw, 42, 8);
-    ctx.fillStyle = col.text; ctx.fillText(col.label, PAD + nw + 34, y + 13);
-    y += 76;
+    const std = ex?.standardReps || 0;
+    const maxW = ex ? getMaxWeight(ex, rec.subExerciseId) : null;
+    let ch = CP + f(15) + f(6) + f(11) + f(8) + rec.sets.length * rowH + CP;
+    if (maxW != null) ch += f(12) + f(8);
+
+    ctx.fillStyle = C.surface; _fillRR(ctx, PAD, y, IW, ch, f(12));
+    const ix = PAD + CP, iw = IW - CP * 2;
+    let cy = y + CP;
+
+    // Exercise name
+    ctx.fillStyle = C.text; ctx.font = `bold ${f(15)}px system-ui,sans-serif`;
+    const enw = ctx.measureText(ex?.name || '不明').width;
+    ctx.fillText(ex?.name || '不明', ix, cy);
+    if (subEx) {
+      ctx.fillStyle = C.muted; ctx.font = `${f(13)}px system-ui,sans-serif`;
+      ctx.fillText(' — ' + subEx.name, ix + enw, cy);
+    }
+    // Muscle badge (right)
+    ctx.font = `bold ${f(12)}px system-ui,sans-serif`;
+    const bl = col.label, bpx = f(9), bpy = f(3);
+    const bw = ctx.measureText(bl).width + bpx * 2, bh = f(12) + bpy * 2;
+    const bx = PAD + IW - CP - bw;
+    ctx.fillStyle = col.bg; _fillRR(ctx, bx, cy, bw, bh, f(12));
+    ctx.fillStyle = col.text; ctx.fillText(bl, bx + bpx, cy + bpy);
+    cy += f(15) + f(6);
+
+    // MAX weight info line
+    if (maxW != null) {
+      ctx.fillStyle = C.muted; ctx.font = `${f(12)}px system-ui,sans-serif`;
+      ctx.fillText('基準 ' + std + ' rep / MAX ' + maxW + 'kg', ix, cy);
+      cy += f(12) + f(8);
+    }
+
+    // Table header: Set | 重量 | Rep | 1RM
+    const c1 = f(28), c4 = f(54), rem = iw - c1 - c4, c2 = Math.round(rem / 2), c3 = rem - c2;
+    const x1 = ix+c1/2, x2 = ix+c1+c2/2, x3 = ix+c1+c2+c3/2, x4 = ix+c1+c2+c3+c4/2;
+    ctx.fillStyle = C.muted; ctx.font = `${f(11)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText('Set', x1, cy); ctx.fillText('重量', x2, cy);
+    ctx.fillText('Rep', x3, cy); ctx.fillText('1RM', x4, cy);
+    ctx.textAlign = 'left'; cy += f(11) + f(8);
+
+    // Set rows
     rec.sets.forEach((set, si) => {
       const isBW = set.weightType === 'bodyweight';
       const rm = calcRM(isBW ? session.bodyWeight : set.weight, set.reps);
-      ctx.fillStyle = '#3a3a3a'; _fillRR(ctx, PAD, y, IW, 52, 8);
-      ctx.font = '34px system-ui,sans-serif'; ctx.fillStyle = '#a8a8a8';
-      ctx.fillText('Set' + (si + 1), PAD + 16, y + 10);
+      const ry = cy + (rowH - f(14)) / 2;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = C.muted; ctx.font = `${f(13)}px system-ui,sans-serif`;
+      ctx.fillText(String(si + 1), x1, ry);
+      ctx.fillStyle = C.text; ctx.font = `${f(14)}px system-ui,sans-serif`;
       const ws = isBW ? '体重' + (session.bodyWeight != null ? '(' + session.bodyWeight + 'kg)' : '') : (set.weight != null ? set.weight + 'kg' : '--');
-      ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 38px system-ui,sans-serif';
-      ctx.fillText(ws + ' × ' + (set.reps ?? '--') + 'rep', PAD + 110, y + 8);
-      if (rm != null) {
-        ctx.fillStyle = '#ff8a65'; ctx.font = '34px system-ui,sans-serif'; ctx.textAlign = 'right';
-        ctx.fillText('1RM ' + fmtRM(rm), PAD + IW - 16, y + 10); ctx.textAlign = 'left';
-      }
-      y += 60;
+      ctx.fillText(ws, x2, ry);
+      ctx.fillText((set.reps != null ? set.reps : '--') + ' rep', x3, ry);
+      if (rm != null) { ctx.fillStyle = C.orange; ctx.font = `bold ${f(13)}px system-ui,sans-serif`; ctx.fillText(fmtRM(rm), x4, ry); }
+      else { ctx.fillStyle = C.muted; ctx.fillText('--', x4, ry); }
+      ctx.textAlign = 'left'; cy += rowH;
     });
-    y += 12; ctx.fillStyle = '#505050'; ctx.fillRect(PAD, y, IW, 2); y += 38;
+
+    y += ch + f(10);
   });
-  ctx.fillStyle = '#a8a8a8'; ctx.font = '36px system-ui,sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('筋トレメモ · ' + session.date, W / 2, y); ctx.textAlign = 'left';
+
+  // Footer
+  ctx.fillStyle = C.muted; ctx.font = `${f(11)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+  ctx.fillText('筋トレメモ', W / 2, y + f(8)); ctx.textAlign = 'left';
   return cv.toDataURL('image/png');
 }
 function saveShareImage(session, exercises) {
@@ -1045,7 +1116,7 @@ function NewSession({ navigate }) {
 
   const form = useSessionForm({
     date:       draft?.date || todayStr(),
-    bodyWeight: draft?.bodyWeight ?? null,
+    bodyWeight: draft?.bodyWeight ?? getLastBodyWeight(),
     records:    draft?.records || [],
   });
 
