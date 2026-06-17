@@ -34,7 +34,7 @@
       -webkit-font-smoothing: antialiased;
     }
     .app { display: flex; flex-direction: column; min-height: 100vh; }
-    .main-content { flex: 1; padding: 16px; padding-bottom: 84px; }
+    .main-content { flex: 1; padding: 16px; padding-bottom: 200px; }
 
     .bottom-nav {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -424,6 +424,71 @@ function repBgStyle(reps, stdReps) {
   return {};
 }
 
+// ── Share image ──
+function _fillRR(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath(); ctx.fill();
+}
+function generateShareImage(session, exercises) {
+  const W = 1080, PAD = 64, IW = W - PAD * 2;
+  let H = PAD * 2 + 60 + 100 + 38 + 56;
+  if (session.bodyWeight != null) H += 68;
+  session.exercises.forEach(r => { H += 76 + r.sets.length * 60 + 50; });
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#2d2d2d'; ctx.fillRect(0, 0, W, H);
+  let y = PAD;
+  ctx.fillStyle = '#e53935'; ctx.font = 'bold 44px system-ui,sans-serif'; ctx.fillText('筋トレメモ', PAD, y); y += 60;
+  ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 80px system-ui,sans-serif'; ctx.fillText(session.date, PAD, y); y += 100;
+  if (session.bodyWeight != null) { ctx.fillStyle = '#a8a8a8'; ctx.font = '48px system-ui,sans-serif'; ctx.fillText('体重 ' + session.bodyWeight + 'kg', PAD, y); y += 68; }
+  ctx.fillStyle = '#505050'; ctx.fillRect(PAD, y, IW, 2); y += 38;
+  session.exercises.forEach(rec => {
+    const ex = exercises.find(e => e.id === rec.exerciseId);
+    const subEx = ex && rec.subExerciseId ? ex.subExercises?.find(s => s.id === rec.subExerciseId) : null;
+    const col = COLORS[(ex && ex.muscleGroup) || 'chest'];
+    const nm = [ex?.name || '不明', subEx?.name].filter(Boolean).join(' — ');
+    ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 52px system-ui,sans-serif';
+    const nw = ctx.measureText(nm).width;
+    ctx.fillText(nm, PAD, y);
+    ctx.font = 'bold 30px system-ui,sans-serif';
+    const bw = ctx.measureText(col.label).width + 28;
+    ctx.fillStyle = col.bg; _fillRR(ctx, PAD + nw + 20, y + 6, bw, 42, 8);
+    ctx.fillStyle = col.text; ctx.fillText(col.label, PAD + nw + 34, y + 13);
+    y += 76;
+    rec.sets.forEach((set, si) => {
+      const isBW = set.weightType === 'bodyweight';
+      const rm = calcRM(isBW ? session.bodyWeight : set.weight, set.reps);
+      ctx.fillStyle = '#3a3a3a'; _fillRR(ctx, PAD, y, IW, 52, 8);
+      ctx.font = '34px system-ui,sans-serif'; ctx.fillStyle = '#a8a8a8';
+      ctx.fillText('Set' + (si + 1), PAD + 16, y + 10);
+      const ws = isBW ? '体重' + (session.bodyWeight != null ? '(' + session.bodyWeight + 'kg)' : '') : (set.weight != null ? set.weight + 'kg' : '--');
+      ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 38px system-ui,sans-serif';
+      ctx.fillText(ws + ' × ' + (set.reps ?? '--') + 'rep', PAD + 110, y + 8);
+      if (rm != null) {
+        ctx.fillStyle = '#ff8a65'; ctx.font = '34px system-ui,sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText('1RM ' + fmtRM(rm), PAD + IW - 16, y + 10); ctx.textAlign = 'left';
+      }
+      y += 60;
+    });
+    y += 12; ctx.fillStyle = '#505050'; ctx.fillRect(PAD, y, IW, 2); y += 38;
+  });
+  ctx.fillStyle = '#a8a8a8'; ctx.font = '36px system-ui,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('筋トレメモ · ' + session.date, W / 2, y); ctx.textAlign = 'left';
+  return cv.toDataURL('image/png');
+}
+function saveShareImage(session, exercises) {
+  const url = generateShareImage(session, exercises);
+  const a = document.createElement('a');
+  a.href = url; a.download = '筋トレ_' + session.date + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
 function sortedByMG(exercises) {
   return [...exercises].sort((a, b) => {
     const d = MG_ORDER.indexOf(a.muscleGroup) - MG_ORDER.indexOf(b.muscleGroup);
@@ -667,6 +732,7 @@ function SessionDetail({ navigate, sessionId }) {
       <div className="row" style=${{ gap: 6 }}>
         <button onClick=${() => navigate({ page: 'edit-session', params: { id: sessionId } })}
           className="btn btn-secondary btn-sm">✏️ 編集</button>
+        <button onClick=${() => saveShareImage(session, exercises)} className="btn btn-secondary btn-sm">📸 画像</button>
         <button onClick=${handleDelete} className="btn btn-danger btn-sm">削除</button>
       </div>
     </div>
@@ -1640,10 +1706,10 @@ function Settings({ navigate }) {
       <div style=${{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>エクスポート</div>
       <div style=${{ display: 'flex', gap: 8, marginBottom: 18 }}>
         <button className="btn btn-secondary" style=${{ flex: 1 }} onClick=${exportAllData}>
-          ↓ 全データ (JSON)
+          ↑ 全データ (JSON)
         </button>
         <button className="btn btn-secondary" style=${{ flex: 1 }} onClick=${exportSessionsCSV}>
-          ↓ 記録 (CSV)
+          ↑ 記録 (CSV)
         </button>
       </div>
       <div style=${{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>インポート（全データ置き換え）</div>
@@ -1671,7 +1737,7 @@ function Settings({ navigate }) {
           fontWeight: 600, color: 'var(--text-muted)', width: '100%',
           border: '1px dashed var(--border)',
         }}>
-          ↑ JSONファイルを選択
+          ↓ JSONファイルを選択
           <input type="file" accept=".json" style=${{ display: 'none' }} onChange=${handleFileSelect} />
         </label>
       `}

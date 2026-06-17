@@ -1,5 +1,5 @@
 // Bump CACHE version when app files change to force cache refresh
-const CACHE = 'wm-v4';
+const CACHE = 'wm-v5';
 
 const LOCAL_ASSETS = [
   './',
